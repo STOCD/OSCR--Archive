@@ -1,4 +1,4 @@
-# OCSR - Open Source Combat Reader
+# OSCR - Open Source Combat Reader
 A next gen CombatLog parser for Star Trek Online
 
 ## Description
