@@ -27,5 +27,5 @@ CombatLog Mechanics Consult - Vel
 
 ## Licence
 
-This project is under The Unlicense
+OSCR and its source code is licensed under GPLv3
 
