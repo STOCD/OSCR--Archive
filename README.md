@@ -19,6 +19,8 @@ TBD
 
 ## Authors
 
+Programmer - Gauss STO
+
 Producer - Mara "Sizer" Morrigan - mara.mos714@gmail.com, Discord: Sizer#3498
 
 CombatLog Mechanics Consult - Vel
