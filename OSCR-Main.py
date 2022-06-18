@@ -574,7 +574,7 @@ def main():  # for now the functinos for reading the .log file into arrays, slic
 
 
         else:
-            if not damagetype == "Warp Core Breach":
+            if not damagetype == "Warp Core Breach" or not x[combatlogDict["petID"]] == "Warp Core Breach" or not x[combatlogDict["pet"]] == "Warp Core Breach" or not x[combatlogDict["source"] == "Warp Core Breach"]:
                 if not ((x[combatlogDict["targetID"]] in playerList) and (x[combatlogDict["ID"]] in playerList)):
                     if damage1 < 0:
                         damage1 *= -1
@@ -944,8 +944,8 @@ def main():  # for now the functinos for reading the .log file into arrays, slic
         #         print(col)
 
     frontpageTable = createFrontPageTable()
-    for player in frontpageTable:
-        print(player)
+    print(frontpageTable)
+
 
 
 if __name__ == "__main__":
