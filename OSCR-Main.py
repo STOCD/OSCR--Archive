@@ -25,7 +25,7 @@ class players:          #main container class, used for saving stats on all enti
         self.isPlayer = isPlayer
         self.combatOver = False
         self.name = name
-        self.dmgoutindex = {"name": 0, "target": 1, "damage": 2, "DPS": 3, "maxHit": 4, "crits": 5, "flanks": 6, "attacks": 7, "misses": 8, "CrtH": 9, "acc": 10, "flankrate": 11, "kills": 12, "hulldamage": 13, "shielddamage": 14, "resists": 15}
+        self.dmgoutindex = {"name": 0, "target": 1, "damage": 2, "DPS": 3, "maxHit": 4, "crits": 5, "flanks": 6, "attacks": 7, "misses": 8, "CrtH": 9, "acc": 10, "flankrate": 11, "kills": 12, "hulldamage": 13, "shielddamage": 14, "resist": 15, "hullAttacks": 16, "finalResist": 17}
         self.healOutIndex = {"name": 0, "target": 1, "healtotal": 2, "HPS": 3, "hullheal": 4, "shieldheal": 5, "maxHeal": 6, "Crits": 7, "healticks": 8, "CrtH": 9 }
         self.dmgoutTable = []
         self.dmgoutDict = {}
@@ -64,11 +64,16 @@ class players:          #main container class, used for saving stats on all enti
         self.endTime = 0
         self.finishTime = 0
         self.acc = 0
+        self.resist = 0
+        self.hullAttacks = 0
+        self.finalresist = 0
     def updateStats(self, time2):
         self.temptotalAttacks = self.totalAttacks - self.misses
         self.totalTime = (time2 - self.startTime).total_seconds()
         self.runtime = self.totalTime
         self.endTime = time2
+        if not self.hullAttacks == 0:
+            self.finalresist = self.resist/self.hullAttacks
         if not self.totalTime == 0:
             self.DPS = self.totaldamage/self.totalTime
         if self.temptotalAttacks >= 1 and self.totalAttacks >= 1 and self.totalCrits >= 1 and self.flanks >= 1:
@@ -93,6 +98,8 @@ class players:          #main container class, used for saving stats on all enti
 
     def updateDMGOutTable(self):
         self.combatTime = self.runtime
+        if self.combatTime < 1:
+            self.combatTime = 1
         for rows in self.dmgoutTable:
             for col in rows:
                 self.tmpDamage = col[self.dmgoutindex["damage"]]
@@ -100,6 +107,11 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpAttacks = col[self.dmgoutindex["attacks"]]
                 self.tmpMisses = col[self.dmgoutindex["misses"]]
                 self.tmpFlanks = col[self.dmgoutindex["flanks"]]
+                if  col[self.dmgoutindex["hullAttacks"]] ==  0:
+                    print(col[self.dmgoutindex["hullAttacks"]], col[self.dmgoutindex["resist"]])
+                else:
+                    col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]]/col[self.dmgoutindex["hullAttacks"]]
+
                 col[self.dmgoutindex["DPS"]] = self.tmpDamage/self.combatTime
                 self.temporalAttacks = self.tmpAttacks - self.tmpMisses
                 if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
@@ -127,6 +139,8 @@ class players:          #main container class, used for saving stats on all enti
                     self.tmpFlanks = col[self.dmgoutindex["flanks"]]
                     col[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                     self.temporalAttacks = self.tmpAttacks - self.tmpMisses
+                    col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]] / col[
+                        self.dmgoutindex["hullAttacks"]]
                     if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
                         col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
                         col[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
@@ -148,6 +162,8 @@ class players:          #main container class, used for saving stats on all enti
                             self.tmpAttacks = cols2[self.dmgoutindex["attacks"]]
                             self.tmpMisses = cols2[self.dmgoutindex["misses"]]
                             self.tmpFlanks = cols2[self.dmgoutindex["flanks"]]
+                            cols2[self.dmgoutindex["finalResist"]] = cols2[self.dmgoutindex["resist"]] / cols2[
+                                self.dmgoutindex["hullAttacks"]]
                             cols2[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                             self.temporalAttacks = self.tmpAttacks - self.tmpMisses
                             if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
@@ -172,6 +188,8 @@ class players:          #main container class, used for saving stats on all enti
                                 self.tmpFlanks = cols3[self.dmgoutindex["flanks"]]
                                 cols3[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                                 self.temporalAttacks = self.tmpAttacks - self.tmpMisses
+                                cols3[self.dmgoutindex["finalResist"]] = cols3[self.dmgoutindex["resist"]] / cols3[
+                                    self.dmgoutindex["hullAttacks"]]
                                 if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
                                     cols3[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
                                     cols3[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
@@ -196,6 +214,8 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpFlanks = col[self.dmgoutindex["flanks"]]
                 col[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                 self.temporalAttacks = self.tmpAttacks - self.tmpMisses
+                col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]] / col[
+                    self.dmgoutindex["hullAttacks"]]
                 if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
                     col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
                     col[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
@@ -212,6 +232,8 @@ class players:          #main container class, used for saving stats on all enti
 
     def updateHealsTable(self):
         self.combatTime = self.runtime
+        if self.combatTime < 1:
+            self.combatTime = 1
         for rows in self.healsOutTable:
             for col in rows:
                 self.tmpHealsOut = col[self.healOutIndex["healtotal"]]
@@ -317,7 +339,7 @@ def generateID(IDSplyce):           #returns player ID (not necessary if necessa
 
 
 def createFrontPageTable():     #generates the front page table with a quick summary of combat stats
-    endTable = [["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%damage", "%damage taken", "%atks-in", "total heals", "% healed" , "deaths"]]
+    endTable = [["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken", "%atks-in", "total heals", "% healed" , "deaths"]]
     totalDamage = 0
     totalTaken = 0
     totalAtks = 0
@@ -327,8 +349,8 @@ def createFrontPageTable():     #generates the front page table with a quick sum
             totalDamage += player.totaldamage
             totalTaken += player.totalDamageTaken
             totalAtks += player.totalAttacksTaken
-            print(player.totalAttacksTaken)
             totalHeals += player.totalHeals
+
     for player in tableArray:
         if player.isPlayer:
             percentageDamage = player.totaldamage/totalDamage * 100
@@ -336,10 +358,8 @@ def createFrontPageTable():     #generates the front page table with a quick sum
             percentageTaken = player.totalDamageTaken/totalTaken * 100
             percentageHeals = player.totalHeals/totalHeals * 100
             handle = generateHandle(player.name)
-            temp = [handle, player.totalTime, player.DPS, player.totaldamage, player.crtH, player.maxOneHit, percentageDamage, percentageTaken, percentageATS, player.totalHeals, percentageHeals, player.deaths]
+            temp = [handle, player.totalTime, player.DPS, player.totaldamage, player.crtH, player.maxOneHit, player.finalresist, percentageDamage, percentageTaken, percentageATS, player.totalHeals, percentageHeals, player.deaths]
             endTable.append(temp)
-            #re add heals
-    #some order function, might be better in the visual driver for allowing the user to filter by stats
 
     return endTable
 
@@ -361,7 +381,7 @@ def getFlags(flagUpdater):      #returns flags combat lines
                 kill = True
     return crit, miss, flank, kill
 
-def calculateResistance(line1):
+def calculateResistance(line1):   #for now uselesss
     hullmag1 = float(line1[combatlogDict["mag1"]])
     hullmag2 = float(line1[combatlogDict["mag2"]])
     source = line1[combatlogDict["ID"]]
@@ -383,7 +403,7 @@ def calculateResistance(line1):
     else:
         resist = (1-((shieldmag2+hullmag1)/hullmag2))
         return resist
-        
+
 
 def main():     #for now the functinos for reading the .log file into arrays, slicing arrays and generating all the data tables are together in 1 function, eventually will be split up
     global path, combatlogDict, combatlog, newCombatLog, tableArray, playerdict, NPCs, excludeDamage, excludeAttacks, exculdedHealTicks
@@ -435,7 +455,7 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
         damagetype = x[combatlogDict["dmageType"]]
 
         #Heals
-        if damagetype == "Shield" and damage1 < 0 and damage2 >= 0 or damagetype == "Hitpoints":
+        if (damagetype == "Shield" and damage1 < 0 and damage2 >= 0) or damagetype == "HitPoints":
             if damage1 < 0:
                 damage1 *= -1
             attacker.totalHeals += damage1
@@ -454,7 +474,6 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
 
             #non pet heals
             if x[combatlogDict["pet"]] == "*" or x[combatlogDict["targetID"]] == "*":
-
                 if source in attacker.healsOutDict:
                     newTarget = True
                     for col in attacker.healsOutTable[attacker.healsOutDict[source]]:
@@ -706,8 +725,8 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
         #Non pets
 
 
-        elif x[combatlogDict["pet"]] == "*" or x[combatlogDict["targetID"]] == "*":
-            if not damagetype in excludeDamage:
+        elif (x[combatlogDict["pet"]] == "*" or x[combatlogDict["targetID"]] == "*") and damagetype != "HitPoints":
+            if not x[combatlogDict["source"]] in excludeDamage:
                 if not ((x[combatlogDict["targetID"]] in playerList) and (x[combatlogDict["ID"]] in playerList)):
                     if damage1 < 0:
                         damage1 *= -1
@@ -717,6 +736,16 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     attacker.totaldamage += damage1
                     if damage1 > attacker.maxOneHit:
                         attacker.maxOneHit = damage1
+
+                    resist = 0
+                    if not damagetype == "Shield" and not isMiss:
+                        if damage2 == 0:
+                            resist = 0
+                        else:
+                            resist = damage1/damage2*100
+                            if not resist == 0:
+                                attacker.resist += resist
+                                attacker.hullAttacks += 1
 
 
                     if x[combatlogDict["targetID"]] in playerList:
@@ -764,7 +793,10 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 col[attacker.dmgoutindex["damage"]] += damage1
                                 col[attacker.dmgoutindex["hulldamage"]] += hulldamage
                                 col[attacker.dmgoutindex["shielddamage"]] += shielddamage
-
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["hullAttacks"]] += 1
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["resist"]] += resist
+                                    col[attacker.dmgoutindex["resist"]] += resist
                                 if damage1 > damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["maxHit"]]:
                                     damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["maxHit"]] = damage1
                                 if damage1 > col[attacker.dmgoutindex["maxHit"]]:
@@ -782,12 +814,19 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 if isKill:
                                     damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["kills"]] += 1
                                     col[attacker.dmgoutindex["kills"]] += 1
+
+
                         if newTargeted:
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]].append(
-                                [dmgOutSource, source, damage1, 0, damage1, (1 if isCrit else 0),(1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage])
+                                [dmgOutSource, source, damage1, 0, damage1, (1 if isCrit else 0),(1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["damage"]] += damage1
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["hulldamage"]] += hulldamage
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
                             if not source in excludeAttacks:
                                 damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["attacks"]] += 1
                             if damage1 > damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["maxHit"]]:
@@ -804,9 +843,9 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     else:
                         damaged.dmginTable.append([
                             [source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage],
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0],
                             [source, target, damage1, 0, damage1, (1 if isCrit else 0),
-                             (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage]])
+                             (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
                         damaged.dmgInDict.update({dmgOutSource: len(attacker.dmgoutTable) - 1})
 
 
@@ -824,6 +863,12 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 col[attacker.dmgoutindex["damage"]] += damage1
                                 col[attacker.dmgoutindex["hulldamage"]] += hulldamage
                                 col[attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["hullAttacks"]] += 1
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["resist"]] += resist
+                                    col[attacker.dmgoutindex["resist"]] += resist
                                 if damage1 > attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["maxHit"]]:
                                     attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["maxHit"]] = damage1
                                 if damage1 > col[attacker.dmgoutindex["maxHit"]]:
@@ -842,10 +887,15 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                     col[attacker.dmgoutindex["kills"]] += 1
                         if newTarget:
                             attacker.dmgoutTable[attacker.dmgoutDict[source]].append(
-                                [source, target, damage1, 0, damage1, (1 if isCrit else 0),(1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage])
+                                [source, target, damage1, 0, damage1, (1 if isCrit else 0),(1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
                             attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["damage"]] += damage1
                             attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["hulldamage"]] += hulldamage
                             attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
                             if not source in excludeAttacks:
                                 attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["attacks"]] += 1
                             if damage1 > attacker.dmgoutTable[attacker.dmgoutDict[source]][0][attacker.dmgoutindex["maxHit"]]:
@@ -861,15 +911,15 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     else:
                         attacker.dmgoutTable.append([
                             [source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage],
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0],
                             [source, target, damage1, 0, damage1, (1 if isCrit else 0),
-                             (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage]])
+                             (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
                         attacker.dmgoutDict.update({source: len(attacker.dmgoutTable) - 1})
 
 
         #Pets
         else:
-            if not damagetype in excludeDamage:
+            if not x[combatlogDict["source"]] in excludeDamage:
                 if not ((x[combatlogDict["targetID"]] in playerList) and (x[combatlogDict["ID"]] in playerList)):
                     if damage1 < 0:
                         damage1 *= -1
@@ -905,6 +955,16 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
 
                     # specific attacks handler
 
+                    resist = 0
+                    if not damagetype == "Shield" and not isMiss:
+                        if damage2 == 0:
+                            resist = 0
+                        else:
+                            resist = damage1/damage2*100
+                            if not resist == 0:
+                                attacker.resist += resist
+                                attacker.hullAttacks += 1
+
                     hulldamage = 0
                     shielddamage = 0
 
@@ -932,6 +992,12 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 col[attacker.dmgoutindex["damage"]] += damage1
                                 col[attacker.dmgoutindex["hulldamage"]] += hulldamage
                                 col[attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["hullAttacks"]] += 1
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["resist"]] += resist
+                                    col[attacker.dmgoutindex["resist"]] += resist
                                 if damage1 > damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
                                     attacker.dmgoutindex["maxHit"]]:
                                     damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
@@ -958,13 +1024,18 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                         if newTargeted:
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]].append(
                                 [dmgOutSource, source, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0),
-                                 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage])
+                                 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
                                 attacker.dmgoutindex["damage"]] += damage1
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
                                 attacker.dmgoutindex["hulldamage"]] += hulldamage
                             damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
                                 attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
                             if not dmgOutSource in excludeAttacks:
                                 damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][attacker.dmgoutindex["attacks"]] += 1
                             if damage1 > damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
@@ -987,10 +1058,10 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     else:
                         damaged.dmginTable.append([
                             [source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage],
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0],
                             [source, target, damage1, 0, damage1, (1 if isCrit else 0),
                              (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage,
-                             shielddamage]])
+                             shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
                         damaged.dmgInDict.update({dmgOutSource: len(attacker.dmgoutTable) - 1})
 
                     #check if pet type already exists
@@ -1001,6 +1072,11 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                             attacker.dmgoutindex["hulldamage"]] += hulldamage
                         attacker.petDMGTable[attacker.petSourceDict[source]][0][
                             attacker.dmgoutindex["shielddamage"]] += shielddamage
+                        if not damagetype == "Shield" and not isMiss and not resist == 0:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["hullAttacks"]] += 1
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["resist"]] += resist
                         if not weapon in excludeAttacks:
                             attacker.petDMGTable[attacker.petSourceDict[source]][0][attacker.dmgoutindex["attacks"]] += 1
                         if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][0][attacker.dmgoutindex["maxHit"]]:
@@ -1023,6 +1099,11 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 attacker.dmgoutindex["hulldamage"]] += hulldamage
                             attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
                                 attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
                             if not weapon in excludeAttacks:
                                 attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
                                 attacker.dmgoutindex["attacks"]] += 1
@@ -1048,6 +1129,11 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][attacker.dmgoutindex["damage"]] += damage1
                                 attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][attacker.dmgoutindex["hulldamage"]] += hulldamage
                                 attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["hullAttacks"]] += 1
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["resist"]] += resist
                                 if not weapon in excludeAttacks:
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][attacker.dmgoutindex["attacks"]] += 1
                                 if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][attacker.dmgoutindex["maxHit"]]:
@@ -1065,6 +1151,9 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["hulldamage"]] += hulldamage
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["damage"]] += damage1
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                    if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["hullAttacks"]] += 1
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["resist"]] += resist
                                     if not weapon in excludeAttacks:
                                         attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["attacks"]] += 1
                                     if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["maxHit"]]:
@@ -1081,14 +1170,14 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                 else:
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]].append(
                                         [target, "global4", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                        (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage])
+                                        (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
                                     attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
 
                             else:
                                 #adding new weapon instance
                                 attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]].append([[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                    (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage], [target, "global3", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                    (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage]])
+                                    (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global3", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                    (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
                                 attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
                                 attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
 
@@ -1096,9 +1185,9 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                         else:
                             #adding a new unique pet to a type of pet
                             attacker.petDMGTable[attacker.petSourceDict[source]].append([[sourceID, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage], [target, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage]]])
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]])
                             attacker.petSourceIDDict.update({sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]])-1})
                             attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
                             attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
@@ -1106,10 +1195,10 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     else:
                         #adding a new pet type
                         attacker.petDMGTable.append([[source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage], [[sourceID, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage], [target, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage]]]])
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[sourceID, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]]])
                         attacker.petSourceDict.update({source: len(attacker.petDMGTable)-1})
                         attacker.petSourceIDDict.update({sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]])-1})
                         attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
@@ -1118,8 +1207,8 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
 
 
     for table in tableArray:
+        table.updateTables()
         if table.isPlayer:      #comment/uncomment all the data that you want printed.
-            table.updateTables()
             print("                 ", table.name)
             # print("damage: ", table.totaldamage)
             # print("DPS: ", table.DPS)
@@ -1132,7 +1221,8 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
             # for col in table.petDMGTable :
             #     print(col)
             # print(table.petDMGTable)
-
+            for row in table.dmgoutTable:
+                print(row[0][table.dmgoutindex["name"]], row[0][table.dmgoutindex["finalResist"]])
         # if not table.isPlayer:                printing stats on NPCs
         #     table.updateTables()
         #     print("                 ", table.name)
@@ -1147,8 +1237,7 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
         #     for col in table.dmgoutTable:
         #         print(col)
 
-    print(tableArray)
-    print(playerdict)
+
     frontpageTable = createFrontPageTable()
     for player in frontpageTable:
         print(player)
