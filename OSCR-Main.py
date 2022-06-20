@@ -3,7 +3,7 @@ import time
 
 #first draft
 
-path = "combatlog.log" #input path to combatlog here. 2 combatlogs in the file are a ISE run by Spencer, previously provided by Gaus' version and a personal ISA run
+path = "New Text Document.txt" #input path to combatlog here. 2 combatlogs in the file are a ISE run by Spencer, previously provided by Gaus' version and a personal ISA run
 counter = 0
 combatlog = []          #unspliced combatlog
 combatlogDict = {"date": 0, "character": 1, "ID": 2, "pet": 3, "petID": 4, "target": 5, "targetID": 6,
@@ -128,6 +128,8 @@ class players:          #main container class, used for saving stats on all enti
                     col[self.dmgoutindex["flankrate"]] = 0
     def updatePetsDMGOutTable(self):
         self.combatTime = self.runtime
+        if self.combatTime < 1:
+            self.combatTime = 1
         for rows in self.petDMGTable:
             for col in rows:
                 if col == rows[0]:
@@ -245,6 +247,8 @@ class players:          #main container class, used for saving stats on all enti
 
     def updatePetHealsTable(self):
         self.combatTime = self.runtime
+        if self.combatTime < 1:
+            self.combatTime = 1
         for rows in self.petHealsTable:
             for col in rows:
                 if col == rows[0]:
@@ -278,6 +282,8 @@ class players:          #main container class, used for saving stats on all enti
 
     def updateHealingInTable(self):
         self.combatTime = self.runtime
+        if self.combatTime < 1:
+            self.combatTime = 1
         for rows in self.healsInTable:
             for col in rows:
                 self.tmpHealsOut = col[self.healOutIndex["healtotal"]]
@@ -504,19 +510,19 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     if newTarget:
                         attacker.healsOutTable[attacker.healsOutDict[source]].append(
                             [source, target, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0])
-                        attacker.healsOutTable[attacker.healsOutDict[source]][0][attacker.healOutIndex["damage"]] += damage1
+                        attacker.healsOutTable[attacker.healsOutDict[source]][0][attacker.healOutIndex["healtotal"]] += damage1
                         attacker.healsOutTable[attacker.healsOutDict[source]][0][
-                            attacker.healOutIndex["hulldamage"]] += hullHeal
+                            attacker.healOutIndex["hullheal"]] += hullHeal
                         attacker.healsOutTable[attacker.healsOutDict[source]][0][
-                            attacker.healOutIndex["shielddamage"]] += shieldHeal
+                            attacker.healOutIndex["shieldheal"]] += shieldHeal
                         if not source in excludeAttacks:
-                            attacker.healsOutTable[attacker.healsOutDict[source]][0][attacker.healOutIndex["attacks"]] += 1
+                            attacker.healsOutTable[attacker.healsOutDict[source]][0][attacker.healOutIndex["healticks"]] += 1
                         if damage1 > attacker.healsOutTable[attacker.healsOutDict[source]][0][
-                            attacker.healOutIndex["maxHeall"]]:
+                            attacker.healOutIndex["maxHeal"]]:
                             attacker.healsOutTable[attacker.healsOutDict[source]][0][
                                 attacker.healOutIndex["maxHeal"]] = damage1
                         if isCrit:
-                            attacker.healsOutTable[attacker.healsOutDict[source]][0][attacker.healOutIndex["crits"]] += 1
+                            attacker.healsOutTable[attacker.healsOutDict[source]][0][attacker.healOutIndex["Crits"]] += 1
                 else:
                     attacker.healsOutTable.append([
                         [source, target, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0],
@@ -927,7 +933,7 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                     sourceID = x[combatlogDict["petID"]]
                     weapon = x[combatlogDict["source"]]
                     target = x[combatlogDict["targetID"]]
-                    weaponID = source + sourceID + weapon
+                    weaponID = sourceID + weapon
                     targetID = sourceID + weapon + target
 
                     # update general stats of attacker
@@ -1148,6 +1154,10 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][attacker.dmgoutindex["kills"]] += 1
 
                                 if targetID in attacker.petTargetDict:
+                                    # print()
+                                    # print(x)
+                                    # print([attacker.petTargetDict[targetID]])
+                                    # print(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["hulldamage"]] += hulldamage
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["damage"]] += damage1
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["shielddamage"]] += shielddamage
@@ -1168,6 +1178,8 @@ def main():     #for now the functinos for reading the .log file into arrays, sl
                                         attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][attacker.petTargetDict[targetID]][attacker.dmgoutindex["kills"]] += 1
 
                                 else:
+                                    if x[combatlogDict["targetID"]] == "C[18 Mission_Borgraid1_Comm_Array]":
+                                        print("test")
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]].append(
                                         [target, "global4", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
                                         (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
