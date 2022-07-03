@@ -4,24 +4,6 @@ import time as timer
 
 #first draft
 
-path = "Combatlog2.Log" #input path to combatlog here. 2 combatlogs in the file are a ISE run by Spencer, previously provided by Gaus' version and a personal ISA run
-counter = 0
-globalcombatlog = []          #unspliced combatlog
-combatlogDict = {"date": 0, "character": 1, "ID": 2, "pet": 3, "petID": 4, "target": 5, "targetID": 6,
-                 "source": 7, "sourceID": 8, "dmageType": 9, "flags": 10, "mag1": 11, "mag2": 12}   #dictonary of spliced combatlog
-playerdict = {}         #dictionary all entities, gives ID and returns position of that ID in tableArray
-playerList = []         #list of all players
-NPCs = []               #list of all NPCs
-newCombatLog = []       #combatlog with spliced lines
-tableArray = []         #array with all the player class'
-otherslist = []         #all pet damage abilities
-mainlist = []           #all non pet damage abiliites
-templist = []
-excludeAttacks = ["Shield Scraping II", "Tachyon Charges"]
-excludeDamage = ["Warp Core Breach"]
-exculdedHealTicks = []
-otherCombats = []
-
 
 class players:          #main container class, used for saving stats on all entities
     def __init__(self, name, isPlayer, time):
@@ -111,7 +93,7 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpMisses = col[self.dmgoutindex["misses"]]
                 self.tmpFlanks = col[self.dmgoutindex["flanks"]]
                 if  col[self.dmgoutindex["hullAttacks"]] ==  0:
-                    print(col[self.dmgoutindex["hullAttacks"]], col[self.dmgoutindex["resist"]])
+                    pass
                 else:
                     col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]]/col[self.dmgoutindex["hullAttacks"]]
 
@@ -1225,7 +1207,6 @@ def readCombat(inmediatlyReadFirstCombat=True):
     file.seek(0)
     lines = file.readlines()
     for line in lines:
-        print(line)
         globalcombatlog.append(line)
     combatLogAnalysis()
 
@@ -1235,8 +1216,7 @@ def readCombat(inmediatlyReadFirstCombat=True):
     print(run)
 
 
-def changePath(newPath):
-    path = newPath
+
 
 def readPreviousCombat(combatID):
     combat = otherCombats[combatID-2]
@@ -1247,15 +1227,45 @@ def readPreviousCombat(combatID):
         globalcombatlog.append(line)
     combatLogAnalysis()
 
-def main():
-    global path, combatlogDict, combatlog, newCombatLog, tableArray, playerdict, NPCs, excludeDamage, excludeAttacks, exculdedHealTicks
+def generatedUItables(pathInput):
+    global path
+    path = pathInput
     readCombat()
-    print(tableArray)
-    prontpageTable = createFrontPageTable()
-    for player in prontpageTable:
-        print(player)
+    uiDictionary = {}
+    tempInstance = players("temp", False, None)
+    dmgTableIndex = tempInstance.dmgoutindex
+    healTableIndex = tempInstance.healOutIndex
+    uiInputDictionary = {"isPlayer": 0, "damageOut": 1, "petDamageOut": 2, "damageIn": 3, "healsOut": 4, "petHealsOut": 5, "healsIn": 6}
+    for entity in tableArray:
+        input = [entity.isPlayer, entity.dmgoutTable, entity.petDMGTable, entity.dmginTable, entity.healsOutTable, entity.petHealsTable, entity.healsInTable]
+        uiDictionary.update({entity.name: input})
+    return uiDictionary, dmgTableIndex, healTableIndex
 
+def main():
+    global path, combatlogDict, combatlog, newCombatLog, tableArray, playerdict, NPCs, excludeDamage, excludeAttacks, exculdedHealTicks, globalcombatlog, playerList, otherslist, mainlist, otherCombats
+    path = ""  # input path to combatlog here. 2 combatlogs in the file are a ISE run by Spencer, previously provided by Gaus' version and a personal ISA run
+    counter = 0
+    globalcombatlog = []  # unspliced combatlog
+    combatlogDict = {"date": 0, "character": 1, "ID": 2, "pet": 3, "petID": 4, "target": 5, "targetID": 6,
+                     "source": 7, "sourceID": 8, "dmageType": 9, "flags": 10, "mag1": 11,
+                     "mag2": 12}  # dictonary of spliced combatlog
+    playerdict = {}  # dictionary all entities, gives ID and returns position of that ID in tableArray
+    playerList = []  # list of all players
+    NPCs = []  # list of all NPCs
+    newCombatLog = []  # combatlog with spliced lines
+    tableArray = []  # array with all the player class'
+    otherslist = []  # all pet damage abilities
+    mainlist = []  # all non pet damage abiliites
+    excludeAttacks = ["Shield Scraping II", "Tachyon Charges"]
+    excludeDamage = ["Warp Core Breach"]
+    exculdedHealTicks = []
+    otherCombats = []
+
+
+    uiDictionary, dmgTableIndex, healTableIndex = generatedUItables("Infected [LR] (S) - 06-06-2020 14.11.45.log")
+    print(playerList)
 
 
 if __name__ == '__main__':
     main()
+
