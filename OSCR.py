@@ -298,6 +298,42 @@ class parser:
                      "source": 7, "sourceID": 8, "dmageType": 9, "flags": 10, "mag1": 11,
                      "mag2": 12}
         self.counter2 = 0
+        self.map = None
+        self.difficulty = None
+
+        self.difficultyToAbreviation = {"Elite": "E", "Advanced": "A", "Normal": "N"}
+        self.AbreviationToDifficulty = {"N": "Normal", "Advanced": "A", "E": "Elite"}
+
+        self.queueToAbreviation = {"Infected Space": "IS",
+                                   "Azure_Nebula": "AN",
+                                   "Battle_At_The_Binary_Stars": "BBS",
+                                    "Battle_At_Procyon_V": "BPV",
+                                   "Borg_Disconnected": "BD",
+                                   "Counterpoint": "CP"
+
+
+                                   }
+
+
+
+        self.AbreviationToQueue = {}
+
+
+        self.mapIdentifiers = {"Space_Borg_Battleship_Raidisode_Sibrian_Elite_Initial": "Infected_Space_Elite",
+                               "Space_Borg_Dreadnought_Raidisode_Sibrian_Final_Boss": "Infected_Space",
+                               "Mission_Space_Romulan_Colony_Flagship_Lleiset": "Azure_Nebula",
+                                "Space_Klingon_Dreadnought_Dsc_Sarcophagus": "Battle_At_The_Binary_Stars",
+                               "Event_Procyon_5_Queue_Krenim_Dreadnaught_Annorax": "Battle_At_Procyon_V",
+                               "Mission_Space_Borg_Queen_Diamond_Brg_Queue_Liberation": "Borg_Disconnected",
+                               "Mission_Starbase_Mirror_Ds9_Mu_Queue": "Counterpoint"
+
+
+
+
+
+
+                               }
+
 
     def resetParser(self):
         self.combatlog = []
@@ -309,6 +345,8 @@ class parser:
         self.splicedCombatlog = []
         self.uiDictionary = {}
         self.counter2 = 0
+        self.map = None
+        self.difficulty = None
     def softResetParser(self):
         self.combatlog = []
         self.playerdict = {}
@@ -317,7 +355,9 @@ class parser:
         self.splicedCombatlog = []
         self.uiDictionary = {}
         self.counter2 = 0
-
+        self.tableArray = []
+        self.map = None
+        self.difficulty = None
     def setPath(self, path):
         self.path = path
     def createTableInstance(self, line):  # creates a new class instance and appends to list
@@ -551,10 +591,11 @@ class parser:
                 #pet heals
                 else:
                     source = x[self.combatlogDict["pet"]]
-                    sourceID = x[self.combatlogDict["petID"]]
+                    sourceIDtmp = x[self.combatlogDict["petID"]]
                     ability = x[self.combatlogDict["source"]]
                     target = x[self.combatlogDict["targetID"]]
                     dmgOutSource = x[self.combatlogDict["ID"]]
+                    sourceID = source + sourceIDtmp
                     abilityID = sourceID + ability
                     targetID = sourceID + ability + target
 
@@ -615,6 +656,11 @@ class parser:
 
                     if sourceID in attacker.petHealsIDDict:
                         #updateing stats of pet instance
+                        print("line", x)
+                        print("ground level table", attacker.petHealsTable[attacker.petHealSourceDict[source]])
+                        print("sourceID", sourceID)
+                        print("sourceHealsDict", attacker.petHealsIDDict)
+                        print("dict", attacker.petHealsIDDict[sourceID])
                         attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
                             attacker.healOutIndex["healtotal"]] += damage1
                         attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
@@ -1169,6 +1215,20 @@ class parser:
 
 
 
+    def detectCombat(self, IDString):
+        if IDString in self.mapIdentifiers:
+            map = self.mapIdentifiers[IDString]
+            if map == "Infected_Space_Elite": #add exceptions for all other maps that have unique entities to identify map difficulty
+                self.map = "Infected_Space"
+                self.difficulty = "Elite"
+            else: #set map
+                self.map = map
+        else: #entity not curcial to map identification
+            pass
+
+
+
+
 
     def readCombat(self):
         combatID = 0
@@ -1181,6 +1241,12 @@ class parser:
             start = timer.time()
             for line in file:
                 splycedLine = line.split("::")
+                IDcheck = splycedLine[1].split(",")
+                IDcheck = IDcheck[self.combatlogDict["targetID"]-1]
+                if not IDcheck == "*":
+                    targetID = IDcheck.split(" ")
+                    targetID = targetID[1].split("]")[0]
+                    self.detectCombat(targetID)
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
                 if firstLine:
@@ -1194,6 +1260,7 @@ class parser:
                         newCombat = True
                     else:
                         newCombat = True
+                    combatID += 1
                     parsedLines = 0
                 if newCombat:
                     newFile = tempfile.NamedTemporaryFile(mode="w+", delete=True)
@@ -1209,6 +1276,7 @@ class parser:
         lines = file.readlines()
         for line in lines:
             self.combatlog.append(line)
+        self.combatLogAnalysis()
         lastTime = timer.time()
         run = lastTime - start
         print(run)
@@ -1222,7 +1290,6 @@ class parser:
         self.combatLogAnalysis()
 
     def generatedUItables(self):
-        self.combatLogAnalysis()
         for entity in self.tableArray:
             input = [entity.isPlayer, entity.dmgoutTable, entity.petDMGTable, entity.dmginTable, entity.healsOutTable,
                      entity.petHealsTable, entity.healsInTable]
@@ -1281,12 +1348,15 @@ class parser:
 def main():
     path = "Infected [LR] (S) - 06-06-2020 14.11.45.log"
     parserInstance = parser()
-    uiDictionary, dmgTableIndex, healTableIndex, uiInputDictionary = parserInstance.readCombatwithUITables(path)
+    parserInstance.setPath(path)
+    parserInstance.readCombat()
+
+    print(parserInstance.otherCombats)
 
     frontPage = parserInstance.createFrontPageTable()
-    print(frontPage)
     for line in frontPage:
         print(line)
+    print(parserInstance.map, parserInstance.difficulty)
 
 if __name__ == '__main__':
     main()
