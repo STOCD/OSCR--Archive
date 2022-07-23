@@ -309,9 +309,20 @@ class parser:
                                    "Battle_At_The_Binary_Stars": "BBS",
                                     "Battle_At_Procyon_V": "BPV",
                                    "Borg_Disconnected": "BD",
-                                   "Counterpoint": "CP"
-
-
+                                   "Counterpoint": "CP",
+                                   "Crystalline_Entity": "CC",
+                                    "Gateway_To_Grethor": "GG",
+                                    "Herald_Sphere": "HSP",
+                                   "Operation_Riposte": "OR",
+                                   "Cure_Found": "CS",
+                                   "Days_Of_Doom": "DOD",
+                                   "Dranuur Gauntlet": "DG",
+                                   "Khitomer_Space": "KS",
+                                   "Storming_The_Spire": "STS",
+                                   "Swarm": "SW",
+                                   "To_Hell_With_Honor": "THWH",
+                                   "Gravity_Kills": "GK",
+                                   "Hive_Space": "HS"
                                    }
 
 
@@ -325,7 +336,24 @@ class parser:
                                 "Space_Klingon_Dreadnought_Dsc_Sarcophagus": "Battle_At_The_Binary_Stars",
                                "Event_Procyon_5_Queue_Krenim_Dreadnaught_Annorax": "Battle_At_Procyon_V",
                                "Mission_Space_Borg_Queen_Diamond_Brg_Queue_Liberation": "Borg_Disconnected",
-                               "Mission_Starbase_Mirror_Ds9_Mu_Queue": "Counterpoint"
+                               "Mission_Starbase_Mirror_Ds9_Mu_Queue": "Counterpoint",
+                               "Space_Crystalline_Entity_2018": "Crystalline_Entity",
+                               "Event_Ico_Qonos_Space_Herald_Dreadnaught": "Gateway_To_Grethor",
+                               "Mission_Space_Federation_Science_Herald_Sphere": "Herald_Sphere",
+                               "Msn_Dsc_Priors_System_Tfo_Orbital_Platform_1_Fed_Dsc": "Operation_Riposte",
+                               "Space_Borg_Dreadnought_R02": "Cure_Found",
+                               "Space_Klingon_Tos_X3_Battlecruiser": "Days_Of_Doom",
+                               "Msn_Luk_Colony_Dranuur_Queue_System_Upgradeable_Satellite": "Dranuur_Gauntlet",
+                               "Space_Borg_Dreadnought_Raidisode_Khitomer_Intro_Boss": "Khitomer_Space",
+                               "Mission_Spire_Space_Voth_Frigate": "Storming_The_Spire",
+                               "Space_Drantzuli_Alpha_Battleship": "Swarm",
+                               "Mission_Beta_Lankal_Destructible_Reactor": "To_Hell_With_Honor",
+                               "Space_Federation_Dreadnought_Jupiter_Class_Carrier": "Gravity_Kills",
+                               "Msn_Luk_Hypermass_Queue_System_Tzk_Protomatter_Facility": "Gravity_Kills",
+                               "Space_Borg_Dreadnought_Hive_Intro": "Hive_Space",
+                               "Mission_Space_Borg_Battleship_Queen_1_0f_2": "Hive_Space"
+
+
 
 
 
@@ -1333,12 +1361,13 @@ class parser:
             start = timer.time()
             for line in file:
                 splycedLine = line.split("::")
-                IDcheck = splycedLine[1].split(",")
-                IDcheck = IDcheck[self.combatlogDict["targetID"]-1]
-                if not IDcheck == "*":
-                    targetID = IDcheck.split(" ")
-                    targetID = targetID[1].split("]")[0]
-                    self.detectCombat(targetID)
+                if self.map == None:
+                    IDcheck = splycedLine[1].split(",")
+                    IDcheck = IDcheck[self.combatlogDict["targetID"]-1]
+                    if not IDcheck == "*":
+                        targetID = IDcheck.split(" ")
+                        targetID = targetID[1].split("]")[0]
+                        self.detectCombat(targetID)
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
                 if firstLine:
