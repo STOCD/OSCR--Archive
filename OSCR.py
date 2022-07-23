@@ -654,31 +654,46 @@ class parser:
                             [source, target, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]])
                         damaged.dmgInDict.update({dmgOutSource: len(attacker.dmgoutTable) - 1})
 
-                    if sourceID in attacker.petHealsIDDict:
-                        #updateing stats of pet instance
-                        print("line", x)
-                        print("ground level table", attacker.petHealsTable[attacker.petHealSourceDict[source]])
-                        print("sourceID", sourceID)
-                        print("sourceHealsDict", attacker.petHealsIDDict)
-                        print("dict", attacker.petHealsIDDict[sourceID])
-                        attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                    attacker = players(" ", " ", " ")
+                    if source in attacker.petHealSourceDict:
+                        attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                             attacker.healOutIndex["healtotal"]] += damage1
-                        attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                        attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                             attacker.healOutIndex["hullheal"]] += hullHeal
-                        attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                        attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                             attacker.healOutIndex["shieldheal"]] += shieldHeal
                         if not ability in self.exculdedHealTicks:
-                            attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                             attacker.healOutIndex["healticks"]] += 1
-                        if damage1 > attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                        if damage1 > attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                             attacker.healOutIndex["maxHeal"]]:
-                            attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                                 attacker.healOutIndex["maxHeal"]] = damage1
                         if isCrit:
-                            attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                                 attacker.healOutIndex["Crits"]] += 1
 
-                            #check if weapon for pet exists
+
+                        if sourceID in attacker.petHealsIDDict:
+                            #updateing stats of pet instance
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                attacker.healOutIndex["healtotal"]] += damage1
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                attacker.healOutIndex["hullheal"]] += hullHeal
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                attacker.healOutIndex["shieldheal"]] += shieldHeal
+                            if not ability in self.exculdedHealTicks:
+                                attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                attacker.healOutIndex["healticks"]] += 1
+                            if damage1 > attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                attacker.healOutIndex["maxHeal"]]:
+                                attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                    attacker.healOutIndex["maxHeal"]] = damage1
+                            if isCrit:
+                                attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
+                                    attacker.healOutIndex["Crits"]] += 1
+
+                                #check if weapon for pet exists
                             if abilityID in attacker.petAbilityDict:
                                 #update stats
                                 attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][attacker.petAbilityDict[abilityID]][0][attacker.healOutIndex["healtotal"]] += damage1
@@ -1423,7 +1438,7 @@ class parser:
 
 
 def main():
-    path = "Infected [LR] (S) - 06-06-2020 14.11.45.log"
+    path = "ISA_Array_OOB.log"
     parserInstance = parser()
     parserInstance.setPath(path)
     parserInstance.readCombat()
