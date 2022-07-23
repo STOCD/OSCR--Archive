@@ -933,7 +933,7 @@ class parser:
                         sourceID = x[self.combatlogDict["petID"]]
                         weapon = x[self.combatlogDict["source"]]
                         target = x[self.combatlogDict["targetID"]]
-                        source = "Pets"
+                        source = "Pets (sum)"
                         # update general stats of attacker
 
                         attacker.totaldamage += damage1
