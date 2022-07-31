@@ -304,7 +304,7 @@ class parser:
         self.difficultyToAbreviation = {"Elite": "E", "Advanced": "A", "Normal": "N"}
         self.AbreviationToDifficulty = {"N": "Normal", "Advanced": "A", "E": "Elite"}
 
-        self.queueToAbreviation = {"Infected_Space": "IS",
+        self.queueToAbreviation = {"Infected Space": "IS",
                                    "Azure_Nebula": "AN",
                                    "Battle_At_The_Binary_Stars": "BBS",
                                     "Battle_At_Procyon_V": "BPV",
@@ -351,13 +351,19 @@ class parser:
                                "Space_Federation_Dreadnought_Jupiter_Class_Carrier": "Gravity_Kills",
                                "Msn_Luk_Hypermass_Queue_System_Tzk_Protomatter_Facility": "Gravity_Kills",
                                "Space_Borg_Dreadnought_Hive_Intro": "Hive_Space",
-                               "Mission_Space_Borg_Battleship_Queen_1_0f_2": "Hive_Space"}
-        self.endTable = []
-        self.warpCoreBreach = None
+                               "Mission_Space_Borg_Battleship_Queen_1_0f_2": "Hive_Space"
+
+
+
+
+
+
+
+
+                               }
 
 
     def resetParser(self):
-        self.warpCoreBreach = None
         self.combatlog = []
         self.playerdict = {}
         self.playerList = []
@@ -369,7 +375,6 @@ class parser:
         self.counter2 = 0
         self.map = None
         self.difficulty = None
-        self.endTable = []
     def softResetParser(self):
         self.combatlog = []
         self.playerdict = {}
@@ -381,7 +386,6 @@ class parser:
         self.tableArray = []
         self.map = None
         self.difficulty = None
-        self.endTable = []
     def setPath(self, path):
         self.path = path
     def createTableInstance(self, line):  # creates a new class instance and appends to list
@@ -770,13 +774,11 @@ class parser:
 
 
 
-            elif x[self.combatlogDict["source"]] == "Warp Core Breach":
-                if self.warpCoreBreach == None:
-                    self.warpCoreBreach = players("WarpCoreBreach", False, self.timeToTimeAndDate(x[self.combatlogDict["date"]]))
-                #Do something for WCB damage tracking
-                pass
+
 
             #Non pets
+
+
             elif (x[self.combatlogDict["pet"]] == "*" or x[self.combatlogDict["targetID"]] == "*") and damagetype != "HitPoints":
                 if not x[self.combatlogDict["source"]] in self.excludeDamage:
                     if not ((x[self.combatlogDict["targetID"]] in self.playerList) and (x[self.combatlogDict["ID"]] in self.playerList)):
@@ -1425,11 +1427,10 @@ class parser:
         self.generatedUItables()
         return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary
 
-    def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
-        # self.endTable.append(
-        #     ["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken",
-        #      "%atks-in", "total heals", "% healed", "deaths"])
-        temptable = []
+    def createFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
+        endTable = [
+            ["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken",
+             "%atks-in", "total heals", "% healed", "deaths"]]
         totalDamage = 0
         totalTaken = 0
         totalAtks = 0
@@ -1459,42 +1460,24 @@ class parser:
                 temp = [handle, player.totalTime, player.DPS, player.totaldamage, player.crtH, player.maxOneHit,
                         player.finalresist, percentageDamage, percentageTaken, percentageATS, player.totalHeals,
                         percentageHeals, player.deaths]
-                temptable.append(temp)
-        temptable.sort(key=lambda x:x[2], reverse=True)
-        for row in temptable:
-            self.endTable.append(row)
+                endTable.append(temp)
 
-
-
-    def createFrontPageTable(self):
-        self.generateFrontPageTable()
-        return self.endTable
-
-
-
-    def generalStatsCopy(self):
-        returnString = "OSCR - "
-        if self.endTable == []:
-            self.generateFrontPageTable()
-        map = self.queueToAbreviation[self.map]
-        if self.difficulty == None:
-            map = map + "X"
-        else:
-            map = map + self.difficultyToAbreviation[self.difficulty]
-        returnString = returnString + map
-        print(returnString)
+        return endTable
 
 
 
 def main():
-    path = "test2.log"
+    path = "test_log.log"
     parserInstance = parser()
     parserInstance.setPath(path)
     parserInstance.readCombat()
-    parserInstance.generalStatsCopy()
-    table = parserInstance.createFrontPageTable()
-    print(table)
-    return table
+
+    print(parserInstance.otherCombats)
+
+    frontPage = parserInstance.createFrontPageTable()
+    for line in frontPage:
+        print(line)
+    print(parserInstance.map, parserInstance.difficulty)
 
 if __name__ == '__main__':
     main()
