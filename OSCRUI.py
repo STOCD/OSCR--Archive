@@ -1,25 +1,26 @@
-import tkinter
-import statistics
+#from textwrap import wrap
+#import tkinter
+#import statistics
+#from threading import Thread
 from tkinter.filedialog import askopenfilename
-from tkinter.ttk import Progressbar
+#from tkinter.ttk import Scrollbar as TtkScrollbar
 from tkinter import Tk, messagebox, Toplevel
 from tkinter import PhotoImage, font, StringVar
-from tkinter import Frame, Label, Entry, OptionMenu
+from tkinter import Frame, Label, Entry, OptionMenu, Canvas
 from tkinter import BOTH, BOTTOM, DISABLED, END, FLAT, HORIZONTAL, CENTER
 from tkinter import LEFT, NORMAL, RIGHT, TOP, VERTICAL, WORD, X, Y
 import sys
 import os
 import json
+from copy import deepcopy
 from PIL import Image, ImageTk, ImageGrab
 from operator import itemgetter
-from decimal import Decimal
 import time
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from tksheet import Sheet as TkSheet
-from local.Easytable import Easytable
 
 import OSCR
 
@@ -105,14 +106,14 @@ class OSCRUI():
         'header_grid_fg': "#222222",
         'header_fg': "#b3b3b3", 
         'header_selected_cells_bg': "#3a3a3a",
-        'header_selected_cells_fg': "#b3b3b3",
+        'header_selected_cells_fg': "#aa3c3c",
 
         'index_bg': "#3a3a3a",
         'index_border_fg': "#222222",
         'index_grid_fg': "#222222",
         'index_fg': "#b3b3b3",
         'index_selected_cells_bg': "#3a3a3a",
-        'index_selected_cells_fg': "#b3b3b3",
+        'index_selected_cells_fg': "#aa3c3c",
 
         'top_left_bg': "#3a3a3a",
         'top_left_fg': "#b3b3b3",
@@ -130,10 +131,10 @@ class OSCRUI():
         'outline_color': "#ffff00",
 
         'header_selected_columns_bg': "#3a3a3a",
-        'header_selected_columns_fg': "#b3b3b3",
+        'header_selected_columns_fg': "#aa3c3c",
 
         'index_selected_rows_bg': "#3a3a3a",
-        'index_selected_rows_fg': "#b3b3b3",
+        'index_selected_rows_fg': "#aa3c3c",
 
         'table_selected_rows_border_fg': "#c82934",
         'table_selected_rows_bg': "#3a3a3a",
@@ -144,86 +145,104 @@ class OSCRUI():
     }
 
     # default settings
-    settings = {
+    default_settings = {
         'log_path':''
     }
 
-    def get_data(self):
-        self.players = {}
-        self.overviewData = [[],[],[]]
-        brain = OSCR.parser()
-        data1, *trash = brain.readCombatwithUITables(self.log_path.get())
-        data4 = brain.createFrontPageTable()
-
-        for line in data4[1:]:
-            self.overviewData[0].append(line[1:])
-            self.overviewData[2].append(line[0])
-
-        self.overviewData[1] = data4[0][1:]
-        for key in data1.keys():
-            if key[0] == 'P':
-                player_abilities = []
-                for ability in data1[key][1]:
-                    player_abilities.append([ability[0][0], *ability[0][2:]])
-                player_abilities = sorted(player_abilities, key=itemgetter(2), reverse=True)
-                self.players[key[key.find(' ')+1:-1]] = player_abilities
         
+    def get_data(self, combat=None):
+        """Interface between OSCRUI and OSCR. 
+        Uses OSCR.parser class to fetch combat data and stores it"""
 
+        self.players = {}
+        self.overview_data = [[],[],[]]
+
+        # initial run / click on the Analyze button
+        if combat is None:
+            self.parser = OSCR.parser()
+            data, *_ = self.parser.readCombatwithUITables(self.log_path.get())
+            combats = [[f'{j}'] for j in range(len(self.parser.otherCombats))]
+            self.clear_frame(self.combat_frame)
+            self.combat_table = self.create_column_table(self.combat_frame, combats)
+            self.combat_table.pack(expand=True, fill=BOTH)
+            self.combat_table.set_currently_selected(0, 0, False)
+
+        # subsequent run / click on older combat
+        else:
+            data, *_ = self.parser.readPreviousCombatwithUITables(combat)
+        raw_front_data = self.parser.createFrontPageTable()        
+
+        # format Overview Table data
+        for line in raw_front_data[1:]:
+            self.overview_data[0].append(line[1:])
+            self.overview_data[2].append(line[0])
+        self.overview_data[1] = raw_front_data[0][1:]
+        # format Combat Analysis data
+        for key in data.keys():
+            if key[0] == 'P':
+                abilities = []
+                for ability in data[key][1]:
+                    abilities.append([ability[0][0], *ability[0][2:]])
+                abilities = sorted(abilities, 
+                        key=itemgetter(2), reverse=True)
+                player_index = [self.format_data(line[0]) for line in abilities]
+                player_abilities = [line[1:] for line in abilities]
+                self.format_analysis_table(player_abilities)
+                self.players[key[key.find(' ')+1:-1]] = (
+                        player_index, player_abilities)
+        with open('players.json', 'w') as fil:
+            json.dump(self.players, fil)
+        
     def open_combat_analysis(self):
+        """Creates a smaller window containing the combat analysis"""
+
         c_analysis = Toplevel(self.window, bg=self.theme['app']['oscr'])
         c_analysis.transient(self.window)
         c_analysis.geometry('1000x600')
         c_analysis.title('OSCR - Combat Analysis')
         
-        analysis_frame = Frame(c_analysis, bg=self.theme['app']['bg'], highlightthickness=0)
+        analysis_frame = Frame(c_analysis, 
+                bg=self.theme['app']['bg'], highlightthickness=0)
         analysis_frame.pack(fill=BOTH, expand=True, padx=15, pady=15)
         analysis_frame.grid_columnconfigure(0, weight=1)
         analysis_frame.grid_columnconfigure(1, weight=0)
         analysis_frame.grid_rowconfigure(0, weight=0)
         analysis_frame.grid_rowconfigure(1, weight=1)
         analysis_frame.grid_rowconfigure(2, weight=0)
-
-        table_frame = Frame(analysis_frame, bg=self.theme['app']['bg'], highlightthickness=0)
+        table_frame = Frame(analysis_frame, 
+                bg=self.theme['app']['bg'], highlightthickness=0)
         table_frame.grid(row=1, column=0, sticky='nsew')
-        table_frame.grid_rowconfigure(0, weight=1)
-        table_frame.grid_rowconfigure(1, weight=0)
         table_frame.pack_propagate(False)
 
+        # create tables, one for each player
         player_list = list(self.players.keys())
         table_dict = {}
-        cols = ['Name', 'Damage', 'DPS', 'Max One Hit', 'Crits', 'Flanks', 'Attacks', 'Misses', 'CrtH', 'Accuracy', 
-                'Flank Rate', 'Kills', 'Hull Damage', 'Shield Damage', 'Resistance', 'Hull Attacks', 'Final Resist']
+        cols = ['Damage', 'DPS', 'Max One Hit', 'Crits', 'Flanks', 
+                'Attacks', 'Misses', 'CrtH', 'Accuracy', 'Flank Rate', 'Kills', 
+                'Hull Damage', 'Shield Damage', 'Resistance', 'Hull Attacks', 
+                'Final Resist']
         for player in player_list:
-            player_table = self.create_table(table_frame, data=self.players[player], headers=cols)
+            player_table = self.create_table(table_frame, 
+                    data=self.players[player][1], headers=cols, 
+                    index=self.players[player][0])
+            player_table.row_index_align('w')
+            player_table.set_width_of_index_to_text()
             table_dict[player] = player_table
-            """#print(player)
-            #go = time.perf_counter()
-            player_table = Easytable(table_frame, columns=cols, 
-                    border_color=self.theme['table']['bordercolor'],
-                    heading_style=self.theme['table']['heading'], scrollbar_style=self.theme['scroll'],
-                    bg=self.theme['app']['bg'])
-            #print(f'after constructor: {time.perf_counter()-go}')
-            player_table.add_content(self.players[player], self.format_data)
-            #print(f'after add_content: {time.perf_counter()-go}')
-            player_table.style_configure('content', self.theme['table']['content'])
-            #print(f'after style: {time.perf_counter()-go}')
-            player_table.border_configure('heading content', **self.theme['table']['borderwidth'])
-            #print(f'after border1: {time.perf_counter()-go}')
-            player_table.border_configure('heading', bottom_border=2)
-            #print(f'after border2: {time.perf_counter()-go}')
-            player_table.style_configure('pattern[oddrows]', {'bg':self.theme['table']['altcolor']})
-            #print(f'after style2: {time.perf_counter()-go}')
-            table_dict[player] = player_table"""
 
+        # set up OptionMenu to switch between player tables
         current_player = StringVar(c_analysis, player_list[0])
-        current_player.trace_add('write', lambda e1, e2, e3: self.c_a_changed_player(table_dict, current_player.get()))
-        player_selector = OptionMenu(analysis_frame, current_player, *player_list)
-        player_selector.configure(background=self.theme['app']['bg'], font=self.theme['button']['font'])
+        current_player.trace_add('write', lambda e1, e2, e3: 
+                self.c_a_changed_player(table_dict, current_player.get()))
+        player_selector = OptionMenu(analysis_frame, 
+                current_player, *player_list)
+        player_selector.configure(background=self.theme['app']['bg'], 
+                font=self.theme['button']['font'])
         player_selector.grid(row=0, column=0, sticky='nw')
         table_dict[player_list[0]].pack(fill=BOTH, expand=True)
 
 
     def c_a_changed_player(self, tables, change_to):
+        """shows the table selected in the option menu"""
         if tables[change_to].winfo_ismapped(): 
             return
         for child in tables:
@@ -231,57 +250,66 @@ class OSCRUI():
                 tables[child].pack_forget()
                 tables[change_to].pack(fill=BOTH, expand=True)
 
-    def analyze_log(self):
-        if not os.path.exists(self.log_path.get()):
-            messagebox.showerror(title='Invalid Path', message='The filepath you entered is invalid!')
-            return
+    def analyze_log_callback(self, combat_id=None):
+        """wrapper function for retrieving and showing data"""
+        if self.in_splash: return
         self.make_splash()
-        self.get_data()
-        self.create_overview()
+        self.window.update()
+
+        # initial run / click on the Analyze button
+        if combat_id is None:
+            if not os.path.exists(self.log_path.get()):
+                messagebox.showerror(title='Invalid Path', 
+                        message='The filepath you entered is invalid!')
+                return
+            self.get_data(combat=None)
+            self.create_overview()
+        # subsequent run / click on older combat
+        elif isinstance(combat_id, int): 
+            self.get_data(combat_id)
+            self.create_overview()
+
         self.terminate_splash()
 
     def create_overview(self):
+        """creates the main Parse Overview including graphs and table"""
 
         for current_frame in [self.dps_bar_frame, self.overview_table_frame]:
             self.clear_frame(current_frame) 
 
-        dps = [el[1] for el in self.overviewData[0]]
-        x = self.overviewData[2]
+        # DPS Bar Graph
+        dps = [el[1] for el in self.overview_data[0]]
+        players = self.overview_data[2]
         lbs = self.format_bar_labels(dps)
         with plt.style.context(self.resource_path('local/oscr_default.mplstyle')):
             f, a = plt.subplots()
-            bars = [a.barh(x[j], dps[j], color=self.theme['bar']['fg']) for j in range(len(dps))]
+            bars = [a.barh(players[j], dps[j], 
+                    color=self.theme['bar']['fg']) for j in range(len(dps))]
             for i, bar in enumerate(bars):
                 self.create_bar_label(bar, a, dps, dps[i], lbs[i], i)
             f.set_figwidth(int(self.windowWidth*0.075))
-        #plt.tight_layout()
         chart = FigureCanvasTkAgg(f, self.dps_bar_frame).get_tk_widget()
         chart.pack(fill=BOTH, ipadx=100, ipady=0)
 
-        self.format_table(self.overviewData[0])
+        # Overview Table
+        self.format_table(self.overview_data[0])
 
-        overview_table = self.create_table(self.overview_table_frame, *self.overviewData)
+        overview_table = self.create_table(self.overview_table_frame, 
+                *self.overview_data)
         overview_table.grid(row=0, column=0, sticky='nsew')
         overview_table.grid_propagate(False)
         table_height = overview_table.get_row_heights()[0] * 6.75
         overview_table.configure(height=table_height)
-
-        """tree_frame = Frame(self.contentFrame, highlightbackground=self.theme['table']['bordercolor'], 
-                highlightthickness=1)
-        tree_frame.grid(row=2, column=0, sticky='new', padx=(60,30), pady=30, columnspan=2)
-        table = Easytable(tree_frame, columns=self.overviewTableHeaders, border_color=self.theme['table']['bordercolor'],
-                heading_style=self.theme['table']['heading'], scrollbar_style=self.theme['scroll'])
-        table.pack(fill=X)
-        table.add_content(self.overviewData, self.format_data)
-        table.style_configure('content', self.theme['table']['content'])
-        table.border_configure('heading content', **self.theme['table']['borderwidth'])
-        table.border_configure('heading', bottom_border=2)
-        table.style_configure('pattern[oddrows]', {'bg':self.theme['table']['altcolor']})
-        table.table_configure(height=5)"""
+        
 
     def create_table(self, parent, data, headers=None, index=None):
-        table = TkSheet(parent=parent, data=data, empty_horizontal=0, empty_vertical=0, header_font=self.theme['table']['heading']['font'], font=self.theme['table']['content']['font'])
-        table.enable_bindings('single_select', 'drag_select', 'column_select', 'row_select')
+        """Create a default table with data, headers and index and return it"""
+        table = TkSheet(parent=parent, data=data, empty_horizontal=0, 
+                empty_vertical=0, 
+                header_font=self.theme['table']['heading']['font'], 
+                font=self.theme['table']['content']['font'])
+        table.enable_bindings('single_select', 'drag_select', 
+                'column_select', 'row_select')
         table.set_all_row_heights(height=30, redraw=False)
         table.align('e', redraw=False)
         if headers is not None:
@@ -295,30 +323,73 @@ class OSCRUI():
         table.config(bg = self.theme_table['table_bg'])
         return table
 
+    def create_column_table(self, parent, data):
+        """Create a table with a single column, no header and no index
+        and return it. Used for showing older combats"""
+        table = TkSheet(parent=parent, data=data, empty_horizontal=0, 
+                empty_vertical=0, font=self.theme['button']['font'])
+        table.enable_bindings('single_select')
+        table.align('w', redraw=False)
+        table.hide('row_index')
+        table.hide('header')
+        table.hide('top_left')
+        table.extra_bindings('cell_select', 
+                func=lambda e:self.analyze_log_callback(combat_id = e.row))
+        table.set_options(**self.theme_table, redraw=True)
+        table.config(bg=self.theme_table['table_bg'])
+        table.set_all_column_widths()
+        return table
+
+    def format_analysis_table(self, t):
+        """formats combat analysis table3 4 5 6 10 14"""
+        for line in t:
+            for i in [0, 1, 2, 7, 8, 9, 11, 12, 13, 15]:
+                line[i] = self.format_data(line[i])
+            for j in [3, 4, 5, 6, 10, 14]:
+                line[j] = self.format_data(line[j], integer=True)
+
     def format_table(self, t):
+        """uses self.format_data() on every element of a 2-dimensional list"""
         for i in t:
             for j in range(len(i)):
                 i[j] = self.format_data(i[j])
 
-    def format_data(self, el):
+    def format_data(self, el, integer=False):
+        """rounds floats and ints to 2 decimals and sets 1000s seperators, 
+        ignores string values"""
         if isinstance(el, (int, float)):
-            a = Decimal(el).quantize(Decimal('1.00'))
-            return f'{a:,}'
+            if not integer: return f'{el:,.2f}'
+            else: return f'{el:,.0f}'
+        elif isinstance(el, str):
+            el = el.replace('â€“', '–')
+            el = el.replace('Ãœ', 'Ü')
+            el = el.replace('Ã¼', 'ü')
+            el = el.replace('ÃŸ', 'ß')
+            el = el.replace('Ã¶', 'ö')
+            el = el.replace('Ã¤', 'ä')
+            el = el.replace('â€˜', "'")
+            return el
         else:
             return str(el)        
 
     def create_bar_label(self, bar, axis: Axes , data, current, label, n):
+        """Add label to bar"""
+        # label on the bottom of the bar
         if current > max(data)/10:
             color = self.theme['bar']['dark_text']
-            axis.text(max(data)/100,n-.08,label,color=color, fontweight=self.theme['bar']['font']['weight'], 
+            axis.text(max(data)/100,n-.08,label,color=color,
+                    fontweight=self.theme['bar']['font']['weight'], 
                     fontsize=self.theme['bar']['font']['size'])
-
+        # label on the edge of the bar
         else:
             color = self.theme['bar']['light_text']
-            axis.bar_label(bar, labels=[label], label_type='edge', fontweight=self.theme['bar']['font']['weight'], 
-                    fontsize=self.theme['bar']['font']['size'], color=color, padding=5)
+            axis.bar_label(bar, labels=[label], label_type='edge', 
+                    fontweight=self.theme['bar']['font']['weight'], 
+                    fontsize=self.theme['bar']['font']['size'], color=color, 
+                    padding=5)
         
     def format_bar_labels(self, values):
+        """formats bar labels; '1000' becomes '1 K', '1000000' becomes '1 M'"""
         labels = []
         for v in values:
             if v > 1000000:
@@ -333,16 +404,21 @@ class OSCRUI():
         return labels
 
     def create_default_button(self, master, text, command, **kwargs):
+        """creates a button with default OSCR-Style including bindings and 
+        returns it
+        - **kwargs are passed to the onclick function"""
         button = PlainButton(master, text=text, highlightthickness=1, 
-                bordercolor=self.theme['button']['bd'], hovercolor=self.theme['button']['hover'],
+                bordercolor=self.theme['button']['bd'], 
+                hovercolor=self.theme['button']['hover'],
                 bg=self.theme['button']['bg'], fg=self.theme['button']['fg'],
                 command=lambda e: command(**kwargs))
         button.bt.configure(font=self.theme['button']['font'], padx=3, pady=3)
         return button
 
     def browse_path(self):
-        self.log_path.set(askopenfilename(filetypes=[('CombatLog files', '*.log'), ('All Files', '*.*')], 
-                initialdir=os.getcwd()))
+        """prompts user to browse combatlog file and writes it to self.log_path"""
+        self.log_path.set(askopenfilename(filetypes=[('CombatLog files', '*.log'),
+                ('All Files', '*.*')], initialdir=os.getcwd()))
 
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -353,8 +429,9 @@ class OSCRUI():
         full_path = os.path.join(base_path, relative_path)
         return full_path
 
-    def load_local_image(self, filename, width = None, height = None, forceAspect=False, copy=False):
-        """Request image from web or fetch from local cache"""
+    def load_local_image(self, filename, width = None, height = None, 
+            forceAspect=False, copy=False):
+        """fetch image from local cache"""
         if os.path.exists(filename):
             image = Image.open(filename)
             if (width is not None and height is not None):
@@ -368,23 +445,37 @@ class OSCRUI():
     def resized_main_window(self, event):
         if '{}'.format(event.widget) == '.':
             self.main_window_last_change = event
-            self.window.after(30, lambda value=event: self.resized_main_window_delay_check(value))
+            self.window.after(30, lambda value=event: 
+                    self.resized_main_window_delay_check(value))
     
     def resized_main_window_delay_check(self, event):
         if self.main_window_last_change == event:
             self.windowWidth = event.width
             self.windowHeight = event.height
             self.resize_banner()
+            #self.resize_combat_buttons()
 
     def resize_banner(self):
+        """resizes the banner to fit the new window size"""
         banner = self.banner2.copy()
         self.banner_height = int(self.windowWidth*(134/1920))
-        self.banner = ImageTk.PhotoImage( banner.resize((self.windowWidth, self.banner_height)))
+        self.banner = ImageTk.PhotoImage( 
+                banner.resize((self.windowWidth, self.banner_height)))
         self.bannerLabel.configure(image=self.banner)
+    
+    def resize_combat_buttons(self):
+        """resizes buttons of the older combat selection frame"""
+        try:
+            self.combat_table.set_all_column_widths(
+                    self.entry_path.winfo_width()-20)
+        except AttributeError: pass
 
     def initialize_ui(self):
+        """initializes UI of main window"""
+
         defaultFont = font.nametofont('TkDefaultFont')
-        defaultFont.configure(family=self.theme['app']['font']['family'],size=self.theme['app']['font']['size'])
+        defaultFont.configure(family=self.theme['app']['font']['family'], 
+                size=self.theme['app']['font']['size'])
 
         self.bannerFrame = Frame(self.window, bg=self.theme['app']['bg'])
         self.bannerFrame.pack(fill=X)
@@ -402,10 +493,8 @@ class OSCRUI():
         self.sidebarFrame.columnconfigure(0, weight=1)
         self.sidebarFrame.columnconfigure(1, weight=0)
 
-
         self.contentFrame = Frame(self.mainFrame, bg=self.theme['app']['bg'])                   
         self.contentFrame.grid_propagate(False)
-        #self.contentFrame.grid(column=1, row=0, sticky='nsew')
         self.contentFrame.columnconfigure(0, weight=1)
         self.contentFrame.columnconfigure(1, weight=0)
         self.contentFrame.rowconfigure(0, weight=0)
@@ -413,8 +502,11 @@ class OSCRUI():
         self.contentFrame.rowconfigure(2, weight=0)
         self.contentFrame.rowconfigure(3, weight=0)
 
-        self.overview_table_frame = Frame(self.contentFrame, bg=self.theme['app']['bg'], highlightthickness=2, highlightbackground='#222222', highlightcolor='#222222')
-        self.overview_table_frame.grid(row=2, column=0, sticky='new', padx=(30,30), pady=30, columnspan=2)
+        self.overview_table_frame = Frame(self.contentFrame, 
+                bg=self.theme['app']['bg'], highlightthickness=2, 
+                highlightbackground='#222222', highlightcolor='#222222')
+        self.overview_table_frame.grid(row=2, column=0, 
+                sticky='new', padx=(30,30), pady=30, columnspan=2)
         self.overview_table_frame.columnconfigure(0, weight=1)
         self.overview_table_frame.columnconfigure(1, weight=0)
         self.overview_table_frame.rowconfigure(0, weight=0)
@@ -426,9 +518,11 @@ class OSCRUI():
         self.mainFrame.rowconfigure(0, weight=1)
 
         self.banner_height = int(self.windowWidth*(134/1920))
-        self.banner, self.banner2 = self.load_local_image(self.resource_path('local/oscrbanner.png'), self.windowWidth, 
+        self.banner, self.banner2 = self.load_local_image(
+                self.resource_path('local/oscrbanner.png'), self.windowWidth, 
                 self.banner_height, copy=True)
-        self.bannerLabel = Label(self.bannerFrame, image= self.banner, borderwidth=0, highlightthickness=0)
+        self.bannerLabel = Label(self.bannerFrame, image=self.banner, 
+                borderwidth=0, highlightthickness=0)
         self.bannerLabel.pack()
 
         self.initialize_splash()
@@ -436,6 +530,8 @@ class OSCRUI():
         self.initialize_main_notebook()
 
     def initialize_main_notebook(self):
+        """initializes frames for the three overview graphs"""
+
         self.main_notebook = Frame(self.contentFrame, bg=self.theme['app']['bg'])
         self.main_notebook.grid(row=1, column=0, sticky='nsew', padx=30, pady=0)
 
@@ -460,29 +556,45 @@ class OSCRUI():
         dps_button.pack(side=RIGHT, padx=4)
 
     def initialize_sidebar(self):
-        Label(self.sidebarFrame, text='CombatLog Filepath', **self.theme['label']).grid(
-                row=0, column=0, sticky='w', pady=(10,0))
+        """creates the left sidebar UI"""
+
+        # log_path section
+        Label(self.sidebarFrame, text='CombatLog Filepath', 
+                **self.theme['label']).grid(row=0, column=0, 
+                sticky='w', pady=(10,0))
         self.log_path = StringVar(self.window, value=self.settings['log_path'])
-        self.log_path.trace_add('write', lambda e1, e2, e3: self.set_setting('log_path', self.log_path.get()))
-        self.entry_path = Entry(self.sidebarFrame, **self.theme['entry'], textvariable=self.log_path)
+        self.log_path.trace_add('write', lambda e1, e2, e3: 
+                self.set_setting('log_path', self.log_path.get()))
+        self.entry_path = Entry(self.sidebarFrame, **self.theme['entry'], 
+                textvariable=self.log_path)
         self.entry_path.grid(row=1, column=0, sticky='ew', pady=5)
         button_frame = Frame(self.sidebarFrame, bg=self.theme['app']['bg'])
         button_frame.grid(row=2, column=0, sticky='ew', pady=(0,10))
         button_frame.columnconfigure(0, weight=0)
         button_frame.columnconfigure(1, weight=1)
         button_frame.columnconfigure(2, weight=0)
-        browse_button = self.create_default_button(button_frame, text='Browse...', command=self.browse_path)
+        browse_button = self.create_default_button(button_frame, 
+                text='Browse...', command=self.browse_path)
         browse_button.grid(row=0, column=0, sticky='w', padx=(0,8))
-        analyze_button = self.create_default_button(button_frame, text='Analyze', command=self.analyze_log)
+        analyze_button = self.create_default_button(button_frame, 
+                text='Analyze', command=self.analyze_log_callback)
         analyze_button.grid(row=0, column=1, sticky='ew')
-        log_selector_frame = Frame(self.sidebarFrame, bg=self.theme['app']['light_bg'], height=300)
-        log_selector_frame.grid(row=3, column=0, pady=35, sticky='ew')
 
-        combat_analysis_bt = self.create_default_button(self.sidebarFrame, text='Combat Analysis', 
-                command=self.open_combat_analysis)
+        # older combats section
+        self.combat_frame = Frame(self.sidebarFrame, highlightthickness=2, 
+                highlightbackground=self.theme['app']['light_bg'], 
+                highlightcolor=self.theme['app']['light_bg'], height=350, 
+                bg=self.theme['app']['bg'])
+        self.combat_frame.grid(row=3, column=0, pady=35, sticky='ew')
+        self.combat_frame.pack_propagate(False)
+
+        # misc button section
+        combat_analysis_bt = self.create_default_button(self.sidebarFrame, 
+                text='Combat Analysis', command=self.open_combat_analysis)
         combat_analysis_bt.grid(row=4, column=0, sticky='w')
 
     def change_main_notebook_tab(self, new_tab:Frame):
+        """un-packs the currently visible tab and packs the new one"""
         if new_tab.winfo_ismapped(): 
             return
         for child in self.main_notebook.winfo_children():
@@ -495,22 +607,29 @@ class OSCRUI():
         self.save_settings()
 
     def blur(self, event):
+        """un-focuses self.entry_path on click outside of the widget"""
         if not event.widget == self.entry_path:
             self.window.focus()
 
     def initialize_splash(self):
+        """creates splash window"""
         self.in_splash = False
-        self.splash_frame = Frame(self.mainFrame, bg=self.theme['app']['bg'], highlightthickness=0)
-        Label(self.splash_frame, text='Loading...', fg=self.theme['app']['oscr'], background=self.theme['app']['bg'],
-                font=(self.theme['app']['font']['family'], 18, 'bold')).place(relx=0.5, rely=0.5, anchor=CENTER)
+        self.splash_frame = Frame(self.mainFrame, bg=self.theme['app']['bg'],
+                highlightthickness=0)
+        Label(self.splash_frame, text='Loading...', 
+                fg=self.theme['app']['oscr'], background=self.theme['app']['bg'],
+                font=(self.theme['app']['font']['family'], 18, 'bold')
+                ).place(relx=0.5, rely=0.5, anchor=CENTER)
         
     def make_splash(self):
-        self.in_splash = True
+        """shows splash window"""
         self.contentFrame.grid_forget()
         self.splash_frame.grid(row=0, column=1, sticky='nsew')
+        self.in_splash = True
         
         
     def terminate_splash(self):
+        """hides splash window"""
         self.splash_frame.grid_forget()
         self.contentFrame.grid(column=1, row=0, sticky='nsew')
         self.in_splash = False
@@ -520,15 +639,19 @@ class OSCRUI():
             w.destroy()
 
     def initialize_backend(self):
-        self.overviewData = [[],[],[]]  # [[data], [headers], [indexes]]
+        """initializes backend data sets"""
+        self.overview_data = [[],[],[]]  # [[data], [headers], [indexes]]
         self.players = {}
         self.load_settings()
 
     def save_settings(self):
+        """saves settings to json file"""
         with open('local/oscr_settings.json', 'w') as f:
             json.dump(self.settings, f)
 
     def load_settings(self):
+        """loads settings from json file"""
+        self.settings = deepcopy(self.default_settings)
         if os.path.exists('local/oscr_settings.json'):
             with open('local/oscr_settings.json') as f:
                 new_settings = json.load(f)
@@ -536,7 +659,8 @@ class OSCRUI():
         
     def initialize_window(self):
         self.window = Tk()
-        self.window.iconphoto(False, PhotoImage(file=self.resource_path('local/oscr_icon_small.png')))
+        self.window.iconphoto(False, PhotoImage(
+                file=self.resource_path('local/oscr_icon_small.png')))
         self.window.title('Open-Source Combatlog Reader')
         self.window.geometry('1000x1000')
         self.window.configure(background=self.theme['app']['oscr'])
@@ -551,10 +675,6 @@ class OSCRUI():
         self.initialize_window()
         self.initialize_backend()
         self.initialize_ui()
-       
-        #self.get_data()
-        #self.plot_test()
-        #self.create_overview()
 
     def run(self):
         if __name__ == '__main__':
@@ -562,7 +682,8 @@ class OSCRUI():
 
 
 class PlainButton(Frame):
-    def __init__(self, master, text:str = '', bg:str = 'grey', fg:str = '#000000', hovercolor:str = '#ffffff', 
+    def __init__(self, master, text:str = '', bg:str = 'grey', 
+                fg:str = '#000000', hovercolor:str = '#ffffff', 
                 bordercolor:str = '#000000', command = None, *args, **kwargs):
         super().__init__(master, highlightbackground=bordercolor, *args, **kwargs)
         self.bt = Label(self, text=text, bg=bg, fg=fg)
@@ -580,7 +701,6 @@ class PlainButton(Frame):
 
     def on_leave(self, event):
         self.configure(highlightbackground=self.bordercolor)
-
 
 
 OSCRUI().run()

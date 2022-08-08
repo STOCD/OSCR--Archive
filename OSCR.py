@@ -417,7 +417,7 @@ class parser:
         return time
 
     def generateHandle(self, IDSplyce):  # returns player handle, can further splice this for only @xxxx or character name.
-        IDSplyce = IDSplyce.split(" ", 1)
+        IDSplyce = IDSplyce.split(" ",1)
         IDSplyce = IDSplyce[1]
         IDSplyce = IDSplyce[:-1]
         return IDSplyce
