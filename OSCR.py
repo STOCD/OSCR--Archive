@@ -1458,7 +1458,6 @@ class parser:
                         time.month) + "/" + str(time.year) + " " + str(time.hour) + ":" + str(
                         time.minute) + ":" + str(time.second)
                     self.otherCombats.update({combatID: (newFile, combatInformationWrapper)})
-                    print(combatInformationWrapper)
                     wrapperUpdated = True
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
