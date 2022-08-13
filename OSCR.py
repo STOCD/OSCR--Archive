@@ -1581,16 +1581,3 @@ class parser:
         returnString = returnString + map
         print(returnString)
 
-
-
-def main():
-    path = "Infected [LR] (S) - 06-06-2020 14.11.45.log"
-    parserInstance = parser()
-    parserInstance.setPath(path)
-    parserInstance.readCombat()
-    parserInstance.generalStatsCopy()
-    table = parserInstance.createFrontPageTable()
-    return table
-
-if __name__ == '__main__':
-    main()
