@@ -346,6 +346,8 @@ class parser:
         self.NPCs = []
         self.tableArray = []
         self.otherCombats = {}
+        self.graphDelta = datetime.timedelta(milliseconds=200)
+        self.lastGraphTime = None
         self.splicedCombatlog = []
         self.uiDictionary = {}
         self.tempInstance = players("temp", False, None)
@@ -483,8 +485,9 @@ class parser:
         return time
 
     def generateHandle(self, IDSplyce):  # returns player handle, can further splice this for only @xxxx or character name.
-        IDSplyce = IDSplyce.split(" ")
         IDSplyce = IDSplyce.split(" ", 1)
+        IDSplyce = IDSplyce[1]
+        IDSplyce = IDSplyce[:-1]
         return IDSplyce
 
     def generateID(self, IDSplyce):  # returns player ID (not necessary if necessary, might be removed down the road if unnecessary
@@ -761,7 +764,7 @@ class parser:
                             attacker.healOutIndex["shieldheal"]] += shieldHeal
                         if not ability in self.exculdedHealTicks:
                             attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
-                            attacker.healOutIndex["healticks"]] += 1
+                                attacker.healOutIndex["healticks"]] += 1
                         if damage1 > attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
                             attacker.healOutIndex["maxHeal"]]:
                             attacker.petHealsTable[attacker.petHealSourceDict[source]][0][
@@ -781,7 +784,7 @@ class parser:
                                 attacker.healOutIndex["shieldheal"]] += shieldHeal
                             if not ability in self.exculdedHealTicks:
                                 attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
-                                attacker.healOutIndex["healticks"]] += 1
+                                    attacker.healOutIndex["healticks"]] += 1
                             if damage1 > attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
                                 attacker.healOutIndex["maxHeal"]]:
                                 attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][0][
@@ -1300,7 +1303,7 @@ class parser:
                                         attacker.dmgoutindex["resist"]] += resist
                                 if not weapon in self.excludeAttacks:
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
-                                    attacker.dmgoutindex["attacks"]] += 1
+                                        attacker.dmgoutindex["attacks"]] += 1
                                 if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
                                     attacker.dmgoutindex["maxHit"]]:
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][0][
@@ -1364,14 +1367,14 @@ class parser:
                                     else:
                                         attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]].append(
                                             [target, "global4", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                            (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
+                                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
                                         attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
 
                                 else:
                                     #adding new weapon instance
                                     attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]].append([[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                        (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global3", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                        (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
+                                                                                                                                      (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global3", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                                                        (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
                                     attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
                                     attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
 
@@ -1379,9 +1382,9 @@ class parser:
                             else:
                                 #adding a new unique pet to a type of pet
                                 attacker.petDMGTable[attacker.petSourceDict[source]].append([[sourceID, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]])
+                                                                                              (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                                                                                                                                                   (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]])
                                 attacker.petSourceIDDict.update({sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]])-1})
                                 attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
                                 attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
@@ -1389,19 +1392,29 @@ class parser:
                         else:
                             #adding a new pet type
                             attacker.petDMGTable.append([[source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[sourceID, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]]])
+                                                          (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[sourceID, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                                                                                                                (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]]])
                             attacker.petSourceDict.update({source: len(attacker.petDMGTable)-1})
                             attacker.petSourceIDDict.update({sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]])-1})
                             attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
                             attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
 
+            time = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
+            if self.lastGraphTime == None:
+                self.lastGraphTime = time
+            if (time - self.lastGraphTime) >= self.graphDelta:
+                pass
+                # do something with graph stuff
 
+            self.lastGraphTime = time
 
         for table in self.tableArray:
             table.updateTables()
+
+
+
 
 
 
@@ -1501,11 +1514,11 @@ class parser:
         self.setPath(path)
         self.readCombat()
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary #, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def readPreviousCombatwithUITables(self, combatID):
         self.readPreviousCombat(combatID)
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary #, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
         self.endTable.append(
             ["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken",
@@ -1545,6 +1558,9 @@ class parser:
         for row in temptable:
             self.endTable.append(row)
 
+
+    def generateIndividualGraphs(self):
+        pass
 
 
     def createFrontPageTable(self):
