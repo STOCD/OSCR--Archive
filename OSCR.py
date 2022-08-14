@@ -1440,11 +1440,17 @@ class parser:
                         targetID = targetID[1].split("]")[0]
                         self.detectCombat(targetID)
                 elif not wrapperUpdated:
-                    combatInformationWrapper = str( self.removeUnderscore(self.map)) + " " + str(time.day) + "/" + str(
-                        time.month) + "/" + str(time.year) + " " + str(time.hour) + ":" + str(
-                        time.minute) + ":" + str(time.second)
+                    timeHelper = [time.day, time.month, time.year, time.hour, time.minute, time.second]
+                    tracker = 0
+                    for timeHelp in timeHelper:
+                        if timeHelp < 10:
+                            timeHelper[tracker] = "0" + str(timeHelp)
+                        tracker += 1
+                    day, month, year, hour, minute, second = timeHelper
+                    combatInformationWrapper = str( self.removeUnderscore(self.map)) + " " + str(day) + "/" + str(
+                        month) + "/" + str(year) + " " + str(hour) + ":" + str(
+                        minute) + ":" + str(second)
                     self.otherCombats.update({combatID: (newFile, combatInformationWrapper)})
-                    print(combatInformationWrapper)
                     wrapperUpdated = True
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
