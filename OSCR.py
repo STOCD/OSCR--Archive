@@ -296,7 +296,8 @@ class parser:
         self.NPCs = []
         self.tableArray = []
         self.otherCombats = {}
-        self.graphDelta = datetime.timedelta(milliseconds=200)
+        self.deltaValue = 200
+        self.graphDelta = datetime.timedelta(milliseconds=self.deltaValue)
         self.lastGraphTime = None
         self.splicedCombatlog = []
         self.uiDictionary = {}
@@ -1392,9 +1393,32 @@ class parser:
             time = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
             if self.lastGraphTime == None:
                 self.lastGraphTime = time
+            if (attacker.isPlayer and not damagetype == "Shield" and damage1 < 0 and damage2 >= 0) or (attacker.isPlayer and not damagetype == "HitPoints"):
+                if attacker.name in self.bufferedDamage:
+                    previousDamage = self.bufferedDamage[attacker.name]
+                    damage = previousDamage + damage1
+                    self.bufferedDamage.update({attacker.name: damage})
+                else:
+                    self.bufferedDamage.update({attacker.name: damage1})
             if (time - self.lastGraphTime) >= self.graphDelta:
-                pass
-                # do something with graph stuff
+                for updatedPlayer in self.tableArray:
+                    if updatedPlayer.isPlayer:
+                        if updatedPlayer.name in self.bufferedDamage:
+                            bufferDamage = self.bufferedDamage[updatedPlayer.name]
+                        else:
+                            bufferDamage = 0
+                        if updatedPlayer.name in self.DPSChart:
+                            DPScharts = self.DPSChart[updatedPlayer.name]
+                            damageChart = self.damageChart[updatedPlayer.name]
+                            DPScharts[0].append(DPScharts[0][-1] + self.deltaValue)
+                            DPScharts[1].append(updatedPlayer.DPS)
+                            damageChart[0].append(DPScharts[0][-1] + self.deltaValue)
+                            damageChart[1].append(bufferDamage)
+                        else:
+                            self.DPSChart.update({updatedPlayer.name: [[self.deltaValue],[updatedPlayer.DPS]]})
+                            self.damageChart.update({updatedPlayer.name: [[self.deltaValue], [bufferDamage]]})
+
+                self.bufferedDamage = {}
 
             self.lastGraphTime = time
 
@@ -1607,9 +1631,6 @@ class parser:
                     dps = str(dps[0])+ "," + str(dps[1])[0:1] + "M"
                 elif len(dps) > 3:
                     dps = str(dps[0])+ "," + str(dps[1])[0:1] + "B"
-
-
-
                 playerArray.append([handle, dmg, dps])
                 if player.runtime > combatTime:
                     combatTime = player.runtime
@@ -1629,8 +1650,14 @@ class parser:
         mapCopy = map
         for playerinstance in playerArray:
             map = map + playerinstance[0] + ": " + str(playerinstance[1]) + "(" + str(playerinstance[2]) + ") "
-            if len(map) > 1000:
-                map = mapCopy + playerinstance[0][0:6] + ": " + str(playerinstance[1]) + "(" + str(playerinstance[2]) + ") "
+            if len(map) > 200:
+                map = mapCopy + playerinstance[0][0:8] + ": " + str(playerinstance[1]) + "(" + str(playerinstance[2]) + ") "
+                if len(map) > 200:
+                    map = mapCopy + playerinstance[0][0:6] + ": " + str(playerinstance[1]) + "(" + str(
+                        playerinstance[2]) + ") "
+                    if len(map) > 200:
+                        map = mapCopy + playerinstance[0][0:4] + ": " + str(playerinstance[1]) + "(" + str(
+                            playerinstance[2]) + ") "
 
 
         returnString = returnString + map
@@ -1640,13 +1667,14 @@ class parser:
 
 
 def main():
-    path = "Combatlog2.Log"
+    path = "combatlog.log"
     parserInstance = parser()
     parserInstance.setPath(path)
     parserInstance.readCombat()
     parserInstance.generalStatsCopy()
     table = parserInstance.createFrontPageTable()
     # print(parserInstance.tableArray[0].petDMGTable)
+    print(parserInstance.DPSChart)
 
     return table
 
