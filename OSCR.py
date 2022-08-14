@@ -317,6 +317,7 @@ class parser:
         self.warpCoreBreach = None
         self.damageChart = {}
         self.DPSChart = {}
+        self.bufferedDamage = {}
 
         self.difficultyToAbreviation = {"Elite": "E", "Advanced": "A", "Normal": "N"}
         self.AbreviationToDifficulty = {"N": "Normal", "Advanced": "A", "E": "Elite"}
@@ -398,6 +399,9 @@ class parser:
         self.map = None
         self.difficulty = None
         self.endTable = []
+        self.damageChart = {}
+        self.DPSChart = {}
+        self.bufferedDamage = {}
     def softResetParser(self):
         self.warpCoreBreach = None
         self.combatlog = []
@@ -411,6 +415,9 @@ class parser:
         self.map = None
         self.difficulty = None
         self.endTable = []
+        self.damageChart = {}
+        self.DPSChart = {}
+        self.bufferedDamage = {}
     def setPath(self, path):
         self.path = path
     def createTableInstance(self, line):  # creates a new class instance and appends to list
@@ -1452,6 +1459,7 @@ class parser:
                         minute) + ":" + str(second)
                     self.otherCombats.update({combatID: (newFile, combatInformationWrapper)})
                     wrapperUpdated = True
+                    print(combatInformationWrapper)
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
                 if firstLine:
@@ -1467,6 +1475,7 @@ class parser:
                         newCombat = True
                     combatID += 1
                     parsedLines = 0
+                    wrapperUpdated = False
                 if newCombat:
                     combatInformationWrapper = str(self.map) + " " + str(time.day) + "/" + str(time.month) + "/" + str(time.year) + " " + str(time.hour) + ":" + str(time.minute) + ":" + str(time.second)
 
@@ -1631,7 +1640,7 @@ class parser:
 
 
 def main():
-    path = "Infected [LR] (S) - 06-06-2020 14.11.45.log"
+    path = "Combatlog2.Log"
     parserInstance = parser()
     parserInstance.setPath(path)
     parserInstance.readCombat()
