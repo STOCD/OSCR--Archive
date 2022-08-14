@@ -36,6 +36,9 @@ class players:          #main container class, used for saving stats on all enti
         self.totalAttacksTaken = 0
         self.deaths = 0
         self.maxOneHit = 0
+        self.maxOneHitWeapon = ""
+        self.maxOneHeal = 0
+        self.maxOneHealWeapon = ""
         self.DPS = 0
         self.crtH = 0
         self.startTime = time
@@ -50,6 +53,8 @@ class players:          #main container class, used for saving stats on all enti
         self.resist = 0
         self.hullAttacks = 0
         self.finalresist = 0
+        self.ATKSin = 0
+
 
     def updateStats(self, time2):
         self.temptotalAttacks = self.totalAttacks - self.misses
@@ -1592,13 +1597,9 @@ class parser:
         self.generateFrontPageTable()
         return self.endTable
 
-
-
     def generalStatsCopy(self):
         playerArray = []
         returnString = "OSCR - "
-        if self.endTable == []:
-            self.generateFrontPageTable()
         map = self.queueToAbreviation[self.map]
         if self.difficulty == None:
             map = map + "X"
@@ -1661,8 +1662,84 @@ class parser:
 
 
         returnString = returnString + map
-        print(returnString)
-        print(playerArray)
+        return returnString
+
+    def getStatsCopy(self, wantedStat, playerID):
+        handle = self.generateHandle(playerID)
+        returnString = "OSCR - "
+        map = self.queueToAbreviation[self.map]
+        if self.difficulty == None:
+            map = map + "X"
+        else:
+            map = map + self.difficultyToAbreviation[self.difficulty]
+        if self.isSpace:
+            map = map + "(S) - "
+        else:
+            map = map + "(G) - "
+        returnString = returnString + map
+        returnString = returnString + handle + " - "
+        if wantedStat == "MaxOneHit":
+            returnString = returnString + "Max One-Hit: "
+        elif wantedStat == "ATKS-in":
+            returnString = returnString + "ATKS-in: "
+            if self.endTable == []:
+                self.generateFrontPageTable()
+
+
+        elif wantedStat == "Heal-Out":
+            returnString = returnString + "Heal-Out: "
+        elif wantedStat == "MaxOneHeal":
+            returnString = returnString + "Max One-Heal"
+        else:
+            return "keyError"
+        return returnString
+
+    def getSpecificGraph(self, playerID, targetCatagory, Target, isDamageGraph):
+        #keys: pet, petID, targetID, source, petSum
+        #IF USING IT FOR A GRAPH ON TARGETID, SUPPLY A TUPLE/ARRAY WITH [source/weapon, targetID]!!!!
+        lastTime = None
+        firstTime = None
+        returnArray = [[],[]]
+        firstLine = True
+        damagePlaceHolder = 0
+        bufferDamage = 0
+
+        if targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "targetID" or targetCatagory == "source" or targetCatagory == "petSum":
+            for line in self.splicedCombatlog:
+                if line[self.combatlogDict[playerID]] == playerID:
+                    time = line[self.combatlogDict["date"]]
+                    time = self.timeToTimeAndDate(time)
+                    if firstLine:
+                        firstTime = time
+                        firstLine = False
+                    if lastTime == None:
+                        lastTime = time
+                    if line[self.combatlogDict["ID"]] == playerID:
+                        if (line[self.combatlogDict[targetCatagory]] == Target and (
+                                        targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "source")) or (
+                                        line[self.combatlogDict["petID"]] != "*" and targetCatagory == "petSum") or (
+                                        line[self.combatlogDict["source"]] == Target[0] and line[
+                                        self.combatlogDict["targetID"]] == Target[1]):
+                            if isDamageGraph:
+                                bufferDamage += line[self.combatlogDict["mag1"]]
+                            else:
+                                damagePlaceHolder += line[self.combatlogDict["mag1"]]
+                            if time - lastTime == self.graphDelta:
+                                if isDamageGraph:
+                                    if len(returnArray[0]) == 0:
+                                        returnArray[0].append(self.deltaValue)
+                                        returnArray[1].append(bufferDamage)
+                                        bufferDamage = 0
+                                    else:
+                                        timer = (time - firstTime).total_seconds()
+                                        DPS = damagePlaceHolder/timer
+                                        if len(returnArray[0]) == 0:
+                                            returnArray[0].append(self.deltaValue)
+                                            returnArray[1].append(DPS)
+                                lastTime = time
+            return returnArray
+        else:
+            return "keyError"
 
 
 
@@ -1673,8 +1750,7 @@ def main():
     parserInstance.readCombat()
     parserInstance.generalStatsCopy()
     table = parserInstance.createFrontPageTable()
-    # print(parserInstance.tableArray[0].petDMGTable)
-    print(parserInstance.DPSChart)
+    parserInstance.getSpecificGraph(None, None, None, None)
 
     return table
 
