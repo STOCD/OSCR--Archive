@@ -1544,11 +1544,11 @@ class parser:
         self.setPath(path)
         self.readCombat()
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary #, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def readPreviousCombatwithUITables(self, combatID):
         self.readPreviousCombat(combatID)
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary #, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
         self.endTable.append(
             ["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken",
