@@ -3,15 +3,24 @@ figure.facecolor: 3a3a3a
 axes.facecolor: 424242
 
 # Spines & Axes
-axes.edgecolor: d0d0d0
-axes.labelcolor: d0d0d0
-xtick.color: d0d0d0
+axes.edgecolor: e0e0e0
+axes.labelcolor: e0e0e0
+xtick.color: e0e0e0
 xtick.labelcolor: inherit
-ytick.color: d0d0d0
+ytick.color: e0e0e0
 ytick.labelcolor: inherit
 xtick.direction: in
+axes.prop_cycle: cycler('color', ['b47254', '545db4', 'a84a51', '8f54b4', '7FA95F', 'B45492', 'BFBC45', '54A9B4', 'E47B1C', 'BCBCBC'])
+
+# Legend
+legend.framealpha: 0.5
+legend.fancybox: False
+legend.fontsize: medium
+legend.labelcolor: e0e0e0
 
 # Font
 font.family: sans-serif
 font.size: 10
 font.weight: bold
+
+figure.autolayout: True
