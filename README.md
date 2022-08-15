@@ -6,5 +6,6 @@ To install this in-development version of OSCR download the branch and unpack it
 OSCR - Requirements + <br>
 `pip install Pillow==8.3.1`<br>
 `pip install matplotlib`<br>
+`pip install numpy`<br>
 `pip install tksheet`<br>
 To install the packages you need to type in the each of the above lines into a command line of your choice individually.
