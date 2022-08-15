@@ -36,6 +36,9 @@ class players:          #main container class, used for saving stats on all enti
         self.totalAttacksTaken = 0
         self.deaths = 0
         self.maxOneHit = 0
+        self.maxOneHitWeapon = ""
+        self.maxOneHeal = 0
+        self.maxOneHealWeapon = ""
         self.DPS = 0
         self.crtH = 0
         self.startTime = time
@@ -50,32 +53,29 @@ class players:          #main container class, used for saving stats on all enti
         self.resist = 0
         self.hullAttacks = 0
         self.finalresist = 0
+        self.ATKSin = 0
+
+
     def updateStats(self, time2):
         self.temptotalAttacks = self.totalAttacks - self.misses
         self.totalTime = (time2 - self.startTime).total_seconds()
         self.runtime = self.totalTime
         self.endTime = time2
         if not self.hullAttacks == 0:
-            self.finalresist = self.resist/self.hullAttacks
+            self.finalresist = self.resist / self.hullAttacks
         if not self.totalTime == 0:
-            self.DPS = self.totaldamage/self.totalTime
-            self.DPS = self.rounder(self.DPS)
+            self.DPS = self.totaldamage / self.totalTime
         if self.temptotalAttacks >= 1 and self.totalAttacks >= 1 and self.totalCrits >= 1 and self.flanks >= 1:
-            self.crtH = self.totalCrits/self.temptotalAttacks * 100
-            self.crtH = self.rounder(self.crtH)
-            self.flankRate = self.flanks/self.temptotalAttacks * 100
-            self.flankRate = self.rounder(self.flankRate)
-            self.acc = self.temptotalAttacks/self.totalAttacks * 100
-            self.acc = self.rounder(self.acc)
+            self.crtH = self.totalCrits / self.temptotalAttacks * 100
+            self.flankRate = self.flanks / self.temptotalAttacks * 100
+            self.acc = self.temptotalAttacks / self.totalAttacks * 100
         elif self.temptotalAttacks >= 1 and self.totalAttacks >= 1 and self.totalCrits >= 1:
             self.acc = self.temptotalAttacks / self.totalAttacks * 100
-            self.acc = self.rounder(self.acc)
             self.crtH = self.totalCrits / self.temptotalAttacks * 100
-            self.crtH = self.rounder(self.crtH)
             self.flankRate = 0
-        if self.totalCrits == 0:
+        elif self.totalCrits == 0:
             self.crtH = 0
-        if self.flanks == 0:
+        elif self.flanks == 0:
             self.flankRate = 0
 
     def updateTables(self):
@@ -97,44 +97,25 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpAttacks = col[self.dmgoutindex["attacks"]]
                 self.tmpMisses = col[self.dmgoutindex["misses"]]
                 self.tmpFlanks = col[self.dmgoutindex["flanks"]]
-                if  col[self.dmgoutindex["hullAttacks"]] ==  0:
+                if col[self.dmgoutindex["hullAttacks"]] == 0:
                     pass
                 else:
-                    col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]]/col[self.dmgoutindex["hullAttacks"]]
-                    col[self.dmgoutindex["finalResist"]] = self.rounder(col[self.dmgoutindex["finalResist"]])
+                    col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]] / col[
+                        self.dmgoutindex["hullAttacks"]]
 
-                col[self.dmgoutindex["DPS"]] = self.tmpDamage/self.combatTime
-                col[self.dmgoutindex["DPS"]] = self.rounder(col[self.dmgoutindex["DPS"]])
-
+                col[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                 self.temporalAttacks = self.tmpAttacks - self.tmpMisses
                 if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
                     col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
-                    col[self.dmgoutindex["CrtH"]] = self.rounder(col[self.dmgoutindex["CrtH"]])
-
                     col[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
-                    col[self.dmgoutindex["flankrate"]] = self.rounder(col[self.dmgoutindex["flankrate"]])
-
                     col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
-                    col[self.dmgoutindex["acc"]] = self.rounder(col[self.dmgoutindex["acc"]])
-
-
                 elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1:
                     col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
-                    col[self.dmgoutindex["CrtH"]] = self.rounder(col[self.dmgoutindex["CrtH"]])
-
-
                     col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
-                    col[self.dmgoutindex["acc"]] = self.rounder(col[self.dmgoutindex["acc"]])
-
-
                     col[self.dmgoutindex["flankrate"]] = 0
                 elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1:
                     col[self.dmgoutindex["CrtH"]] = 0
-
                     col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
-                    col[self.dmgoutindex["acc"]] = self.rounder(col[self.dmgoutindex["acc"]])
-
-
                     col[self.dmgoutindex["flankrate"]] = 0
 
     def updatePetsDMGOutTable(self):
@@ -144,82 +125,80 @@ class players:          #main container class, used for saving stats on all enti
         for rows in self.petDMGTable:
             for col in rows:
                 if col == rows[0]:
-                    #update pet type stats
+                    # update pet type stats
                     self.tmpDamage = col[self.dmgoutindex["damage"]]
                     self.tmpCrits = col[self.dmgoutindex["crits"]]
                     self.tmpAttacks = col[self.dmgoutindex["attacks"]]
                     self.tmpMisses = col[self.dmgoutindex["misses"]]
                     self.tmpFlanks = col[self.dmgoutindex["flanks"]]
-                    col[self.dmgoutindex["DPS"]] = self.rounder(self.tmpDamage / self.combatTime)
+                    col[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                     self.temporalAttacks = self.tmpAttacks - self.tmpMisses
-                    col[self.dmgoutindex["finalResist"]] = self.rounder(col[self.dmgoutindex["resist"]] / col[
-                        self.dmgoutindex["hullAttacks"]])
+                    col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]] / col[
+                        self.dmgoutindex["hullAttacks"]]
                     if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
-                        col[self.dmgoutindex["CrtH"]] = self.rounder(self.tmpCrits / self.temporalAttacks * 100)
-                        col[self.dmgoutindex["flankrate"]] = self.rounder(self.tmpFlanks / self.temporalAttacks * 100)
-                        col[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                        col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
+                        col[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
+                        col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                     elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1:
-                        col[self.dmgoutindex["CrtH"]] = self.rounder(self.tmpCrits / self.temporalAttacks * 100)
-                        col[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                        col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
+                        col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                         col[self.dmgoutindex["flankrate"]] = 0
                     elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1:
                         col[self.dmgoutindex["CrtH"]] = 0
-                        col[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                        col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                         col[self.dmgoutindex["flankrate"]] = 0
                 else:
                     for cols2 in col:
                         if cols2 == col[0]:
-                            #update pet instance stats
+                            # update pet instance stats
                             self.tmpDamage = cols2[self.dmgoutindex["damage"]]
                             self.tmpCrits = cols2[self.dmgoutindex["crits"]]
                             self.tmpAttacks = cols2[self.dmgoutindex["attacks"]]
                             self.tmpMisses = cols2[self.dmgoutindex["misses"]]
                             self.tmpFlanks = cols2[self.dmgoutindex["flanks"]]
-                            cols2[self.dmgoutindex["finalResist"]] = self.rounder(cols2[self.dmgoutindex["resist"]] / cols2[
-                                self.dmgoutindex["hullAttacks"]])
-                            cols2[self.dmgoutindex["DPS"]] = self.rounder(self.tmpDamage / self.combatTime)
+                            cols2[self.dmgoutindex["finalResist"]] = cols2[self.dmgoutindex["resist"]] / cols2[
+                                self.dmgoutindex["hullAttacks"]]
+                            cols2[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                             self.temporalAttacks = self.tmpAttacks - self.tmpMisses
                             if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
-                                cols2[self.dmgoutindex["CrtH"]] = self.rounder(self.tmpCrits / self.temporalAttacks * 100)
-                                cols2[self.dmgoutindex["flankrate"]] = self.rounder(self.tmpFlanks / self.temporalAttacks * 100)
-                                cols2[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                                cols2[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
+                                cols2[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
+                                cols2[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                             elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1:
-                                cols2[self.dmgoutindex["CrtH"]] = self.rounder(self.tmpCrits / self.temporalAttacks * 100)
-                                cols2[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                                cols2[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
+                                cols2[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                                 cols2[self.dmgoutindex["flankrate"]] = 0
                             elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1:
                                 cols2[self.dmgoutindex["CrtH"]] = 0
-                                cols2[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                                cols2[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                                 cols2[self.dmgoutindex["flankrate"]] = 0
                         else:
                             for cols3 in cols2:
-                                #update pet weapon and target stats
+                                # update pet weapon and target stats
                                 self.tmpDamage = cols3[self.dmgoutindex["damage"]]
                                 self.tmpCrits = cols3[self.dmgoutindex["crits"]]
                                 self.tmpAttacks = cols3[self.dmgoutindex["attacks"]]
                                 self.tmpMisses = cols3[self.dmgoutindex["misses"]]
                                 self.tmpFlanks = cols3[self.dmgoutindex["flanks"]]
-                                cols3[self.dmgoutindex["DPS"]] = self.rounder(self.tmpDamage / self.combatTime)
+                                cols3[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
                                 self.temporalAttacks = self.tmpAttacks - self.tmpMisses
-                                cols3[self.dmgoutindex["finalResist"]] = self.rounder(cols3[self.dmgoutindex["resist"]] / cols3[
-                                    self.dmgoutindex["hullAttacks"]])
+                                cols3[self.dmgoutindex["finalResist"]] = cols3[self.dmgoutindex["resist"]] / cols3[
+                                    self.dmgoutindex["hullAttacks"]]
                                 if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
-                                    cols3[self.dmgoutindex["CrtH"]] = self.rounder(self.tmpCrits / self.temporalAttacks * 100)
-                                    cols3[self.dmgoutindex["flankrate"]] = self.rounder(self.tmpFlanks / self.temporalAttacks * 100)
-                                    cols3[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                                    cols3[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
+                                    cols3[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
+                                    cols3[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                                 elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1:
-                                    cols3[self.dmgoutindex["CrtH"]] = self.rounder(self.tmpCrits / self.temporalAttacks * 100)
-                                    cols3[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                                    cols3[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
+                                    cols3[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                                     cols3[self.dmgoutindex["flankrate"]] = 0
                                 elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1:
                                     cols3[self.dmgoutindex["CrtH"]] = 0
-                                    cols3[self.dmgoutindex["acc"]] = self.rounder(self.temporalAttacks / self.tmpAttacks * 100)
+                                    cols3[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
                                     cols3[self.dmgoutindex["flankrate"]] = 0
 
     def updateDMGInTable(self):
         self.combatTime = self.runtime
-        if self.combatTime < 1:
-            self.combatTime = 1
         for rows in self.dmginTable:
             for col in rows:
                 self.tmpDamage = col[self.dmgoutindex["damage"]]
@@ -227,44 +206,22 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpAttacks = col[self.dmgoutindex["attacks"]]
                 self.tmpMisses = col[self.dmgoutindex["misses"]]
                 self.tmpFlanks = col[self.dmgoutindex["flanks"]]
-                if col[self.dmgoutindex["hullAttacks"]] == 0:
-                    pass
-                else:
-                    col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]] / col[
-                        self.dmgoutindex["hullAttacks"]]
-                    col[self.dmgoutindex["finalResist"]] = self.rounder(col[self.dmgoutindex["finalResist"]])
-
                 col[self.dmgoutindex["DPS"]] = self.tmpDamage / self.combatTime
-                col[self.dmgoutindex["DPS"]] = self.rounder(col[self.dmgoutindex["DPS"]])
-
                 self.temporalAttacks = self.tmpAttacks - self.tmpMisses
+                col[self.dmgoutindex["finalResist"]] = col[self.dmgoutindex["resist"]] / col[
+                    self.dmgoutindex["hullAttacks"]]
                 if self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1 and self.tmpFlanks >= 1:
                     col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
-                    col[self.dmgoutindex["CrtH"]] = self.rounder(col[self.dmgoutindex["CrtH"]])
-
                     col[self.dmgoutindex["flankrate"]] = self.tmpFlanks / self.temporalAttacks * 100
-                    col[self.dmgoutindex["flankrate"]] = self.rounder(col[self.dmgoutindex["flankrate"]])
-
                     col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
-                    col[self.dmgoutindex["acc"]] = self.rounder(col[self.dmgoutindex["acc"]])
-
-
                 elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1 and self.tmpCrits >= 1:
                     col[self.dmgoutindex["CrtH"]] = self.tmpCrits / self.temporalAttacks * 100
-                    col[self.dmgoutindex["CrtH"]] = self.rounder(col[self.dmgoutindex["CrtH"]])
-
                     col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
-                    col[self.dmgoutindex["acc"]] = self.rounder(col[self.dmgoutindex["acc"]])
-
                     col[self.dmgoutindex["flankrate"]] = 0
                 elif self.temporalAttacks >= 1 and self.tmpAttacks >= 1:
                     col[self.dmgoutindex["CrtH"]] = 0
-
                     col[self.dmgoutindex["acc"]] = self.temporalAttacks / self.tmpAttacks * 100
-                    col[self.dmgoutindex["acc"]] = self.rounder(col[self.dmgoutindex["acc"]])
-
                     col[self.dmgoutindex["flankrate"]] = 0
-
 
     def updateHealsTable(self):
         self.combatTime = self.runtime
@@ -275,9 +232,9 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpHealsOut = col[self.healOutIndex["healtotal"]]
                 self.tmpCrits = col[self.healOutIndex["Crits"]]
                 self.tmpTicks = col[self.healOutIndex["healticks"]]
-                col[self.healOutIndex["HPS"]] = self.rounder(self.tmpHealsOut / self.combatTime)
+                col[self.healOutIndex["HPS"]] = self.tmpHealsOut / self.combatTime
                 if self.tmpCrits > 0:
-                    col[self.healOutIndex["CrtH"]] = self.rounder(self.tmpCrits / self.tmpTicks)
+                    col[self.healOutIndex["CrtH"]] = self.tmpCrits / self.tmpTicks
 
     def updatePetHealsTable(self):
         self.combatTime = self.runtime
@@ -289,30 +246,28 @@ class players:          #main container class, used for saving stats on all enti
                     self.tmpHealsOut = col[self.healOutIndex["healtotal"]]
                     self.tmpCrits = col[self.healOutIndex["Crits"]]
                     self.tmpTicks = col[self.healOutIndex["healticks"]]
-                    col[self.healOutIndex["HPS"]] = self.rounder(self.tmpHealsOut / self.combatTime)
+                    col[self.healOutIndex["HPS"]] = self.tmpHealsOut / self.combatTime
                     if self.tmpCrits > 0:
-                        col[self.healOutIndex["CrtH"]] = self.rounder(self.tmpCrits / self.tmpTicks)
+                        col[self.healOutIndex["CrtH"]] = self.tmpCrits / self.tmpTicks
                 else:
                     for cols2 in col:
                         if cols2 == col[0]:
-                            #update pet instance stats
+                            # update pet instance stats
                             self.tmpHealsOut = cols2[self.healOutIndex["healtotal"]]
                             self.tmpCrits = cols2[self.healOutIndex["Crits"]]
                             self.tmpTicks = cols2[self.healOutIndex["healticks"]]
-                            cols2[self.healOutIndex["HPS"]] = self.rounder(self.tmpHealsOut / self.combatTime)
+                            cols2[self.healOutIndex["HPS"]] = self.tmpHealsOut / self.combatTime
                             if self.tmpCrits > 0:
-                                cols2[self.healOutIndex["CrtH"]] = self.rounder(self.tmpCrits / self.tmpTicks)
+                                cols2[self.healOutIndex["CrtH"]] = self.tmpCrits / self.tmpTicks
                         else:
                             for cols3 in cols2:
-                                #update pet weapon and target stats
+                                # update pet weapon and target stats
                                 self.tmpHealsOut = cols3[self.healOutIndex["healtotal"]]
                                 self.tmpCrits = cols3[self.healOutIndex["Crits"]]
                                 self.tmpTicks = cols3[self.healOutIndex["healticks"]]
-                                cols3[self.healOutIndex["HPS"]] = self.rounder(self.tmpHealsOut / self.combatTime)
+                                cols3[self.healOutIndex["HPS"]] = self.tmpHealsOut / self.combatTime
                                 if self.tmpCrits > 0:
-                                    cols3[self.healOutIndex["CrtH"]] = self.rounder(self.tmpCrits / self.tmpTicks)
-
-
+                                    cols3[self.healOutIndex["CrtH"]] = self.tmpCrits / self.tmpTicks
 
     def updateHealingInTable(self):
         self.combatTime = self.runtime
@@ -323,9 +278,9 @@ class players:          #main container class, used for saving stats on all enti
                 self.tmpHealsOut = col[self.healOutIndex["healtotal"]]
                 self.tmpCrits = col[self.healOutIndex["Crits"]]
                 self.tmpTicks = col[self.healOutIndex["healticks"]]
-                col[self.healOutIndex["HPS"]] = self.rounder(self.tmpHealsOut / self.combatTime)
+                col[self.healOutIndex["HPS"]] = self.tmpHealsOut / self.combatTime
                 if self.tmpCrits > 0:
-                    col[self.healOutIndex["CrtH"]] = self.rounder(self.tmpCrits / self.tmpTicks)
+                    col[self.healOutIndex["CrtH"]] = self.tmpCrits / self.tmpTicks
 
     def rounder(self, entry):
         if isinstance(entry, int):
@@ -346,7 +301,8 @@ class parser:
         self.NPCs = []
         self.tableArray = []
         self.otherCombats = {}
-        self.graphDelta = datetime.timedelta(milliseconds=200)
+        self.deltaValue = 200
+        self.graphDelta = datetime.timedelta(milliseconds=self.deltaValue)
         self.lastGraphTime = None
         self.splicedCombatlog = []
         self.uiDictionary = {}
@@ -367,6 +323,7 @@ class parser:
         self.warpCoreBreach = None
         self.damageChart = {}
         self.DPSChart = {}
+        self.bufferedDamage = {}
 
         self.difficultyToAbreviation = {"Elite": "E", "Advanced": "A", "Normal": "N"}
         self.AbreviationToDifficulty = {"N": "Normal", "Advanced": "A", "E": "Elite"}
@@ -424,6 +381,13 @@ class parser:
                                "Msn_Kcw_Rura_Penthe_System_Tfo_Dilithium_Hauler": "Best_Served_Cold",
                                "Ground_Federation_Capt_Mirror_Runabout_Tfo": "Operation_Wolf"
                                }
+
+        self.checkSpaceMaps = ["Infected_Space", "Azure_Nebula", "Battle_At_The_Binary_Stars", "Borg_Disconnected", "Counterpoint", "Crystalline_Entity",
+                               "Gateway_To_Grethor", "Herald_Sphere", "Operation_Riposte", "Cure_Found", "Days_Of_Doom", "Dranuur_Gauntlet", "Khitomer_space",
+                               "Storming_The_Spire", "Swarm", "To_Hell_With_Honor", "Gravity_Kills", "Hive_Space", "Best_Served_Cold"]
+
+        self.isSpace = True
+
         self.endTable = []
 
 
@@ -441,6 +405,9 @@ class parser:
         self.map = None
         self.difficulty = None
         self.endTable = []
+        self.damageChart = {}
+        self.DPSChart = {}
+        self.bufferedDamage = {}
     def softResetParser(self):
         self.warpCoreBreach = None
         self.combatlog = []
@@ -454,6 +421,9 @@ class parser:
         self.map = None
         self.difficulty = None
         self.endTable = []
+        self.damageChart = {}
+        self.DPSChart = {}
+        self.bufferedDamage = {}
     def setPath(self, path):
         self.path = path
     def createTableInstance(self, line):  # creates a new class instance and appends to list
@@ -504,6 +474,15 @@ class parser:
             return returner
         else:
             return IDSplyce[1]
+
+    def rounder(self, entry):
+        if isinstance(entry, int):
+            return f'{entry:,}'
+        elif isinstance(entry, float):
+            a = Decimal(entry).quantize(Decimal('1.00'))
+            return f'{a:,}'
+        else:
+            return str(entry)
 
     def removeUnderscore(self, stringer):
         string = stringer
@@ -699,6 +678,13 @@ class parser:
                     abilityID = sourceID + ability
                     targetID = sourceID + ability + target
 
+                    tempTargetID = target.split("[")[1]
+                    tempTargetID = tempTargetID.split(" ")[0]
+                    displayTarget = x[self.combatlogDict["target"]] + " " + tempTargetID
+                    tempdisplaySourceID = sourceIDtmp.split("[")[1]
+                    tempdisplaySourceID = tempdisplaySourceID.split(" ")[0]
+                    displaySourceID = source + " " + tempdisplaySourceID
+
 
                     if dmgOutSource in damaged.healsInTable:
                         newTargeted = True
@@ -819,26 +805,26 @@ class parser:
 
                                 else: #adding a new target that's healed
                                     attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][attacker.petAbilityDict[abilityID]].append(
-                                        [target, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0])
+                                        [target, displayTarget, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0])
                                     attacker.petHealTargetDict.update({targetID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][attacker.petAbilityDict[abilityID]])-1})
 
                             else:
                                 #adding new heal ability instance
-                                attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]].append([[ability, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [target, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]])
+                                attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]].append([[ability, ability, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [target, displayTarget, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]])
                                 attacker.petAbilityDict.update({abilityID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]])-1})
                                 attacker.petHealTargetDict.update({targetID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][attacker.petAbilityDict[abilityID]])-1})
 
 
                         else:
                             #adding a new unique pet to a type of pet
-                            attacker.petHealsTable[attacker.petHealSourceDict[source]].append([[sourceID, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [[ability, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [target, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]]])
+                            attacker.petHealsTable[attacker.petHealSourceDict[source]].append([[sourceID, displaySourceID, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [[ability, ability, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [target, displayTarget, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]]])
                             attacker.petHealsIDDict.update({sourceID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]])-1})
                             attacker.petAbilityDict.update({abilityID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]])-1})
                             attacker.petHealTargetDict.update({targetID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]][attacker.petAbilityDict[abilityID]])-1})
 
                     else:
                         #adding a new pet type
-                        attacker.petHealsTable.append([[source, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [[sourceID, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [[ability, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [target, "global", damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]]]])
+                        attacker.petHealsTable.append([[source, source, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [[sourceID, displaySourceID, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [[ability, ability, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0], [target, displayTarget, damage1, 0, hullHeal, shieldHeal, damage1, (1 if isCrit else 0), 1, 0]]]])
                         attacker.petHealSourceDict.update({source: len(attacker.petHealsTable)-1})
                         attacker.petHealsIDDict.update({sourceID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]])-1})
                         attacker.petAbilityDict.update({abilityID: len(attacker.petHealsTable[attacker.petHealSourceDict[source]][attacker.petHealsIDDict[sourceID]])-1})
@@ -1050,6 +1036,8 @@ class parser:
                         sourceID = x[self.combatlogDict["petID"]]
                         weapon = x[self.combatlogDict["source"]]
                         target = x[self.combatlogDict["targetID"]]
+
+
                         source = "Pets (sum)"
                         # update general stats of attacker
 
@@ -1164,7 +1152,6 @@ class parser:
                         if not source in self.excludeAttacks:
                             attacker.totalAttacks += 1
 
-
                         dmgOutSource = x[self.combatlogDict["ID"]]
                         if dmgOutSource in damaged.dmginTable:
                             newTargeted = True
@@ -1257,6 +1244,13 @@ class parser:
                             damaged.dmgInDict.update({dmgOutSource: len(attacker.dmgoutTable) - 1})
 
 
+
+                        tempTargetID = target.split("[")[1]
+                        tempTargetID = tempTargetID.split(" ")[0]
+                        displayTarget = x[self.combatlogDict["target"]] + " " + tempTargetID
+                        tempdisplaySourceID = sourceID.split("[")[1]
+                        tempdisplaySourceID = tempdisplaySourceID.split(" ")[0]
+                        displaySourceID = source + " " + tempdisplaySourceID
 
 
 
@@ -1366,14 +1360,14 @@ class parser:
 
                                     else:
                                         attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]].append(
-                                            [target, "global4", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                            [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
                                              (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
                                         attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
 
                                 else:
                                     #adding new weapon instance
-                                    attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]].append([[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                                                                                                                      (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global3", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]].append([[weapon, weapon, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                      (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
                                                                                                                                                                                                                                                                         (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
                                     attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
                                     attacker.petTargetDict.update({targetID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]])-1})
@@ -1381,9 +1375,9 @@ class parser:
 
                             else:
                                 #adding a new unique pet to a type of pet
-                                attacker.petDMGTable[attacker.petSourceDict[source]].append([[sourceID, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                                                                              (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                                                                                                                                                                                                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global2", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                attacker.petDMGTable[attacker.petSourceDict[source]].append([[sourceID, displaySourceID, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                              (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, weapon, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                 (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
                                                                                                                                                                                                                                                                                                                                                                    (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]])
                                 attacker.petSourceIDDict.update({sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]])-1})
                                 attacker.petWeaponDict.update({weaponID: len(attacker.petDMGTable[attacker.petSourceDict[source]][attacker.petSourceIDDict[sourceID]])-1})
@@ -1391,10 +1385,10 @@ class parser:
 
                         else:
                             #adding a new pet type
-                            attacker.petDMGTable.append([[source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                                          (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[sourceID, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                                                                                                                                                                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
-                                                                                                                                                                                                                                                                                                                                (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, "global1", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                            attacker.petDMGTable.append([[source, source, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                          (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[sourceID, displaySourceID, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [[weapon, weapon, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                                                                                                                                                                                                                                                                                                                                (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0], [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                   (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]]]])
                             attacker.petSourceDict.update({source: len(attacker.petDMGTable)-1})
                             attacker.petSourceIDDict.update({sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]])-1})
@@ -1404,9 +1398,32 @@ class parser:
             time = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
             if self.lastGraphTime == None:
                 self.lastGraphTime = time
+            if (attacker.isPlayer and not damagetype == "Shield" and damage1 < 0 and damage2 >= 0) or (attacker.isPlayer and not damagetype == "HitPoints"):
+                if attacker.name in self.bufferedDamage:
+                    previousDamage = self.bufferedDamage[attacker.name]
+                    damage = previousDamage + damage1
+                    self.bufferedDamage.update({attacker.name: damage})
+                else:
+                    self.bufferedDamage.update({attacker.name: damage1})
             if (time - self.lastGraphTime) >= self.graphDelta:
-                pass
-                # do something with graph stuff
+                for updatedPlayer in self.tableArray:
+                    if updatedPlayer.isPlayer:
+                        if updatedPlayer.name in self.bufferedDamage:
+                            bufferDamage = self.bufferedDamage[updatedPlayer.name]
+                        else:
+                            bufferDamage = 0
+                        if updatedPlayer.name in self.DPSChart:
+                            DPScharts = self.DPSChart[updatedPlayer.name]
+                            damageChart = self.damageChart[updatedPlayer.name]
+                            DPScharts[0].append(DPScharts[0][-1] + self.deltaValue)
+                            DPScharts[1].append(updatedPlayer.DPS)
+                            damageChart[0].append(DPScharts[0][-1] + self.deltaValue)
+                            damageChart[1].append(bufferDamage)
+                        else:
+                            self.DPSChart.update({updatedPlayer.name: [[self.deltaValue],[updatedPlayer.DPS]]})
+                            self.damageChart.update({updatedPlayer.name: [[self.deltaValue], [bufferDamage]]})
+
+                self.bufferedDamage = {}
 
             self.lastGraphTime = time
 
@@ -1422,11 +1439,16 @@ class parser:
     def detectCombat(self, IDString):
         if IDString in self.mapIdentifiers:
             map = self.mapIdentifiers[IDString]
+
             if map == "Infected_Space_Elite": #add exceptions for all other maps that have unique entities to identify map difficulty
                 self.map = "Infected_Space"
                 self.difficulty = "Elite"
             else: #set map
                 self.map = map
+            if self.map in self.checkSpaceMaps:
+                self.isSpace = True
+            else:
+                self.isSpace = False
         else: #entity not curcial to map identification
             pass
 
@@ -1454,11 +1476,19 @@ class parser:
                         targetID = targetID[1].split("]")[0]
                         self.detectCombat(targetID)
                 elif not wrapperUpdated:
-                    combatInformationWrapper = str( self.removeUnderscore(self.map)) + " " + str(time.day) + "/" + str(
-                        time.month) + "/" + str(time.year) + " " + str(time.hour) + ":" + str(
-                        time.minute) + ":" + str(time.second)
+                    timeHelper = [time.day, time.month, time.year, time.hour, time.minute, time.second]
+                    tracker = 0
+                    for timeHelp in timeHelper:
+                        if timeHelp < 10:
+                            timeHelper[tracker] = "0" + str(timeHelp)
+                        tracker += 1
+                    day, month, year, hour, minute, second = timeHelper
+                    combatInformationWrapper = str( self.removeUnderscore(self.map)) + " " + str(day) + "/" + str(
+                        month) + "/" + str(year) + " " + str(hour) + ":" + str(
+                        minute) + ":" + str(second)
                     self.otherCombats.update({combatID: (newFile, combatInformationWrapper)})
                     wrapperUpdated = True
+                    print(combatInformationWrapper)
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
                 if firstLine:
@@ -1474,6 +1504,7 @@ class parser:
                         newCombat = True
                     combatID += 1
                     parsedLines = 0
+                    wrapperUpdated = False
                 if newCombat:
                     combatInformationWrapper = str(self.map) + " " + str(time.day) + "/" + str(time.month) + "/" + str(time.year) + " " + str(time.hour) + ":" + str(time.minute) + ":" + str(time.second)
 
@@ -1513,11 +1544,11 @@ class parser:
         self.setPath(path)
         self.readCombat()
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary #, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary , self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def readPreviousCombatwithUITables(self, combatID):
         self.readPreviousCombat(combatID)
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary #, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary , self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
         self.endTable.append(
             ["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken",
@@ -1566,17 +1597,164 @@ class parser:
         self.generateFrontPageTable()
         return self.endTable
 
-
-
     def generalStatsCopy(self):
+        playerArray = []
         returnString = "OSCR - "
-        if self.endTable == []:
-            self.generateFrontPageTable()
         map = self.queueToAbreviation[self.map]
         if self.difficulty == None:
             map = map + "X"
         else:
             map = map + self.difficultyToAbreviation[self.difficulty]
-        returnString = returnString + map
-        print(returnString)
+        if self.isSpace:
+            map = map + "(S) - "
+        else:
+            map = map + "(G) - "
+        combatTime = 0
+        for player in self.tableArray:
+            if player.isPlayer:
+                handle =  self.generateHandle(player.name)
+                handle = handle.split("@")
+                handle = "@" + handle[1]
+                dmg = self.rounder(player.totaldamage)
+                dps = self.rounder(player.DPS)
+                dmg = dmg.split(",")
+                dps = dps.split(",")
+                if len(dmg) == 2:
+                    dmg = str(dmg[0]) + "," + str(dmg[1])[0:1] + "K"
+                elif len(dmg) == 3:
+                    dmg = str(dmg[0]) + "," + str(dmg[1])[0:1] + "M"
+                elif len(dmg) > 3:
+                    dmg = str(dmg[0]) + "," + str(dmg[1])[0:1] + "B"
 
+                if len(dps) == 2:
+                    dps = str(dps[0])+ "," + str(dps[1])[0:1] + "K"
+                elif len(dps) == 3:
+                    dps = str(dps[0])+ "," + str(dps[1])[0:1] + "M"
+                elif len(dps) > 3:
+                    dps = str(dps[0])+ "," + str(dps[1])[0:1] + "B"
+                playerArray.append([handle, dmg, dps])
+                if player.runtime > combatTime:
+                    combatTime = player.runtime
+        temp = datetime.timedelta(seconds=combatTime)
+        if temp > datetime.timedelta(minutes=1):
+            seconds = temp.seconds
+            minutes = seconds // 60
+            seconds = seconds - (60 * minutes)
+            if seconds < 10:
+                seconds = "0" + str(seconds)
+            if minutes < 10:
+                minutes = "0" + str(minutes)
+            map = map + "[" + str(minutes) +":" + str(seconds) + "." + str(temp.seconds)[0] + "] DMG(DPS) - "
+        else:
+            map = map + "[0:" + str(temp.seconds) + "." + str(temp.seconds)[0] + "] DMG(DPS) - "
+        playerArray.sort(key=lambda row: row[2], reverse=True)
+        mapCopy = map
+        for playerinstance in playerArray:
+            map = map + playerinstance[0] + ": " + str(playerinstance[1]) + "(" + str(playerinstance[2]) + ") "
+            if len(map) > 200:
+                map = mapCopy + playerinstance[0][0:8] + ": " + str(playerinstance[1]) + "(" + str(playerinstance[2]) + ") "
+                if len(map) > 200:
+                    map = mapCopy + playerinstance[0][0:6] + ": " + str(playerinstance[1]) + "(" + str(
+                        playerinstance[2]) + ") "
+                    if len(map) > 200:
+                        map = mapCopy + playerinstance[0][0:4] + ": " + str(playerinstance[1]) + "(" + str(
+                            playerinstance[2]) + ") "
+
+
+        returnString = returnString + map
+        return returnString
+
+    def getStatsCopy(self, wantedStat, playerID):
+        handle = self.generateHandle(playerID)
+        returnString = "OSCR - "
+        map = self.queueToAbreviation[self.map]
+        if self.difficulty == None:
+            map = map + "X"
+        else:
+            map = map + self.difficultyToAbreviation[self.difficulty]
+        if self.isSpace:
+            map = map + "(S) - "
+        else:
+            map = map + "(G) - "
+        returnString = returnString + map
+        returnString = returnString + handle + " - "
+        if wantedStat == "MaxOneHit":
+            returnString = returnString + "Max One-Hit: "
+        elif wantedStat == "ATKS-in":
+            returnString = returnString + "ATKS-in: "
+            if self.endTable == []:
+                self.generateFrontPageTable()
+
+
+        elif wantedStat == "Heal-Out":
+            returnString = returnString + "Heal-Out: "
+        elif wantedStat == "MaxOneHeal":
+            returnString = returnString + "Max One-Heal"
+        else:
+            return "keyError"
+        return returnString
+
+    def getSpecificGraph(self, playerID, targetCatagory, Target, isDamageGraph):
+        #keys: pet, petID, targetID, source, petSum
+        #IF USING IT FOR A GRAPH ON TARGETID, SUPPLY A TUPLE/ARRAY WITH [source/weapon, targetID]!!!!
+        lastTime = None
+        firstTime = None
+        returnArray = [[],[]]
+        firstLine = True
+        damagePlaceHolder = 0
+        bufferDamage = 0
+
+        if targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "targetID" or targetCatagory == "source" or targetCatagory == "petSum":
+            for line in self.splicedCombatlog:
+                if line[self.combatlogDict[playerID]] == playerID:
+                    time = line[self.combatlogDict["date"]]
+                    time = self.timeToTimeAndDate(time)
+                    if firstLine:
+                        firstTime = time
+                        firstLine = False
+                    if lastTime == None:
+                        lastTime = time
+                    if line[self.combatlogDict["ID"]] == playerID:
+                        if (line[self.combatlogDict[targetCatagory]] == Target and (
+                                        targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "source")) or (
+                                        line[self.combatlogDict["petID"]] != "*" and targetCatagory == "petSum") or (
+                                        line[self.combatlogDict["source"]] == Target[0] and line[
+                                        self.combatlogDict["targetID"]] == Target[1]):
+                            if isDamageGraph:
+                                bufferDamage += line[self.combatlogDict["mag1"]]
+                            else:
+                                damagePlaceHolder += line[self.combatlogDict["mag1"]]
+                            if time - lastTime == self.graphDelta:
+                                if isDamageGraph:
+                                    if len(returnArray[0]) == 0:
+                                        returnArray[0].append(self.deltaValue)
+                                        returnArray[1].append(bufferDamage)
+                                        bufferDamage = 0
+                                    else:
+                                        timer = (time - firstTime).total_seconds()
+                                        DPS = damagePlaceHolder/timer
+                                        if len(returnArray[0]) == 0:
+                                            returnArray[0].append(self.deltaValue)
+                                            returnArray[1].append(DPS)
+                                lastTime = time
+            return returnArray
+        else:
+            return "keyError"
+
+
+
+def main():
+    path = "combatlog.log"
+    parserInstance = parser()
+    parserInstance.setPath(path)
+    parserInstance.readCombat()
+    parserInstance.generalStatsCopy()
+    table = parserInstance.createFrontPageTable()
+    parserInstance.getSpecificGraph(None, None, None, None)
+
+    return table
+
+
+
+if __name__ == '__main__':
+    main()

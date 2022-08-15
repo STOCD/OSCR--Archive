@@ -13,6 +13,7 @@ import sys
 import os
 import json
 from copy import deepcopy
+import numpy as np
 from PIL import Image, ImageTk, ImageGrab
 from operator import itemgetter
 import time
@@ -53,15 +54,22 @@ class OSCRUI():
             'dark_text': '#222222'
         },
         'scroll':{
-            'trough':{'troughcolor':'#424242','troughrelief':'flat','borderwidth':0},
-            'arrow':{'background':'#888888', 'relief':'flat', 'borderwidth':0, 'arrowcolor':'#3a3a3a'},
+            'trough':{'troughcolor':'#424242','troughrelief':'flat',
+                    'borderwidth':0},
+            'arrow':{'background':'#888888', 'relief':'flat', 'borderwidth':0,
+                    'arrowcolor':'#3a3a3a'},
             'thumb':{'relief':'flat', 'background':'#888888', 'borderwidth':0}
         },
         'table':{
-            'heading':{'font':('Helvetica',15,'normal'), 'fg':'#b3b3b3', 'bg':'#3a3a3a'},
-            'content':{'bg':'#424242', 'fg':'#e0e0e0', 'font':('Helvetica',15,'bold'), 'anchor':'e', 'padx':5},
+            'heading':{'font':('Helvetica',13,'normal'), 
+                    'fg':'#b3b3b3', 'bg':'#3a3a3a'},
+            'content':{'bg':'#424242', 'fg':'#e0e0e0', 
+                    'font':('Helvetica',13,'bold'), 'anchor':'e', 'padx':5},
+            'overview_heading_font':('Helvetica',15,'normal'),
+            'overview_content_font':('Helvetica',15,'bold'),
             'bordercolor': '#222222',
-            'borderwidth':{'top_border':0, 'bottom_border':0, 'left_border':0, 'right_border':1},
+            'borderwidth':{'top_border':0, 'bottom_border':0, 'left_border':0,
+                    'right_border':1},
             'altcolor': '#3a3a3a'
         },
         'button':{
@@ -69,7 +77,8 @@ class OSCRUI():
             'bg':'#424242',
             'bd':'#222222',
             'hover':'#c82934',
-            'font':('Helvetica',13,'normal')
+            'font':('Helvetica',13,'normal'),
+            'smallfont':('Helvetica', 11, 'normal')
         },
         'label':{
             'bg':'#3a3a3a',
@@ -160,8 +169,9 @@ class OSCRUI():
         # initial run / click on the Analyze button
         if combat is None:
             self.parser = OSCR.parser()
-            data, *_ = self.parser.readCombatwithUITables(self.log_path.get())
-            combats = [[f'{j}'] for j in range(len(self.parser.otherCombats))]
+            data, *data2 = self.parser.readCombatwithUITables(self.log_path.get())
+            combats = [[self.parser.otherCombats[j][1]] 
+                    for j in list(self.parser.otherCombats.keys())]
             self.clear_frame(self.combat_frame)
             self.combat_table = self.create_column_table(self.combat_frame, combats)
             self.combat_table.pack(expand=True, fill=BOTH)
@@ -169,7 +179,7 @@ class OSCRUI():
 
         # subsequent run / click on older combat
         else:
-            data, *_ = self.parser.readPreviousCombatwithUITables(combat)
+            data, *data2 = self.parser.readPreviousCombatwithUITables(combat)
         raw_front_data = self.parser.createFrontPageTable()        
 
         # format Overview Table data
@@ -190,15 +200,28 @@ class OSCRUI():
                 self.format_analysis_table(player_abilities)
                 self.players[key[key.find(' ')+1:-1]] = (
                         player_index, player_abilities)
-        with open('players.json', 'w') as fil:
-            json.dump(self.players, fil)
+        
+        self.misc_combat_data = data2
+        try:
+            self.map_label.configure(text=data2[4].replace('_', ' '))
+            self.difficulty_label.configure(text=data2[5])
+        except AttributeError:
+            self.map_label.configure(text=data2[4])
+            self.difficulty_label.configure(text=data2[5])
+        """with open('data.json', 'w') as fil:
+            json.dump(self.misc_combat_data[6], fil)
+        with open('data1.json', 'w') as fil:
+            json.dump(self.misc_combat_data[7], fil)"""
         
     def open_combat_analysis(self):
         """Creates a smaller window containing the combat analysis"""
 
         c_analysis = Toplevel(self.window, bg=self.theme['app']['oscr'])
         c_analysis.transient(self.window)
-        c_analysis.geometry('1000x600')
+        self.window.update()
+        width = self.window.winfo_width()*.9
+        height = self.window.winfo_height()*.9
+        c_analysis.geometry(f'{width:.0f}x{height:.0f}')
         c_analysis.title('OSCR - Combat Analysis')
         
         analysis_frame = Frame(c_analysis, 
@@ -206,12 +229,17 @@ class OSCRUI():
         analysis_frame.pack(fill=BOTH, expand=True, padx=15, pady=15)
         analysis_frame.grid_columnconfigure(0, weight=1)
         analysis_frame.grid_columnconfigure(1, weight=0)
+        analysis_frame.grid_columnconfigure(2, weight=0)
         analysis_frame.grid_rowconfigure(0, weight=0)
-        analysis_frame.grid_rowconfigure(1, weight=1)
-        analysis_frame.grid_rowconfigure(2, weight=0)
+        analysis_frame.grid_rowconfigure(1, weight=0)
+        analysis_frame.grid_rowconfigure(2, weight=1)
+        analysis_frame.grid_rowconfigure(3, weight=0)
+        Frame(analysis_frame, highlightthickness=0, 
+                bg=self.theme['app']['oscr'], height=4
+                ).grid(row=1, column=0, columnspan=2, sticky='ew', padx=20)
         table_frame = Frame(analysis_frame, 
                 bg=self.theme['app']['bg'], highlightthickness=0)
-        table_frame.grid(row=1, column=0, sticky='nsew')
+        table_frame.grid(row=2, column=0, sticky='nsew', columnspan=2)
         table_frame.pack_propagate(False)
 
         # create tables, one for each player
@@ -229,10 +257,17 @@ class OSCRUI():
             player_table.set_width_of_index_to_text()
             table_dict[player] = player_table
 
+        # set up overview for the respective player
+        overview_frame = Frame(analysis_frame, highlightthickness=0, 
+                bg=self.theme['app']['bg'])
+        overview_frame.grid(column=1, row=0, sticky='nsew', pady=(0, 20))
+        self.generate_overview_frame(player_list[0], overview_frame)
+
         # set up OptionMenu to switch between player tables
         current_player = StringVar(c_analysis, player_list[0])
         current_player.trace_add('write', lambda e1, e2, e3: 
-                self.c_a_changed_player(table_dict, current_player.get()))
+                self.c_a_changed_player(table_dict, current_player.get(), 
+                overview_frame))
         player_selector = OptionMenu(analysis_frame, 
                 current_player, *player_list)
         player_selector.configure(background=self.theme['app']['bg'], 
@@ -241,7 +276,7 @@ class OSCRUI():
         table_dict[player_list[0]].pack(fill=BOTH, expand=True)
 
 
-    def c_a_changed_player(self, tables, change_to):
+    def c_a_changed_player(self, tables, change_to, overview_frame):
         """shows the table selected in the option menu"""
         if tables[change_to].winfo_ismapped(): 
             return
@@ -249,6 +284,50 @@ class OSCRUI():
             if tables[child].winfo_ismapped():
                 tables[child].pack_forget()
                 tables[change_to].pack(fill=BOTH, expand=True)
+                self.clear_frame(overview_frame)
+                self.generate_overview_frame(change_to, overview_frame)
+
+    def generate_overview_frame(self, player_name, parent):
+        """generates a frame containing overview data"""
+
+        for j, p in enumerate(self.overview_data[2]):
+            if p == player_name:
+                player_data = self.overview_data[0][j]
+        
+        Label(parent, text=player_name, 
+                font=self.merge_font_tuple('label', pweight='bold'),
+                bg=self.theme['label']['bg'], fg=self.theme['label']['fg']
+                ).grid(row=0, column=0, columnspan=4, sticky='ew', pady=20)
+        
+        first_column = {
+            'Combat Time:': f'{player_data[0]} s',
+            'DPS:': player_data[1],
+            'Total Damage:': player_data[2],
+            'Max-One-Hit:' : player_data[4],
+            'Global Critical Chance:': f'{player_data[3]} %',
+            'Debuff:': player_data[5],
+            'Total Heals:': player_data[9],
+            'Deaths:': player_data[11]
+        }
+        second_column = {
+            'Total Damage - Out Quota:': f'{player_data[6]} %',
+            'Total Damage - In Quota': f'{player_data[7]} %',
+            'Attacks - In Quota': f'{player_data[8]} %',
+            'Heals - Out Quota': f'{player_data[10]} %'
+        }
+
+        for c, items in ((0, first_column), (2, second_column)):
+            for r, (tag, value) in enumerate(items.items()):
+                Label(parent, text=tag, 
+                        font=self.merge_font_tuple('label', psize=11, pweight='bold'),
+                        bg=self.theme['label']['bg'], fg=self.theme['label']['fg'], 
+                        anchor='w').grid(row=r+1, column=c, sticky='ew')
+                Label(parent, text=value, 
+                        font=self.merge_font_tuple('label', psize=12),
+                        bg=self.theme['label']['bg'], fg=self.theme['label']['fg'], 
+                        anchor='e').grid(row=r+1, column=c+1, sticky='ew', padx=10)
+
+        
 
     def analyze_log_callback(self, combat_id=None):
         """wrapper function for retrieving and showing data"""
@@ -274,14 +353,17 @@ class OSCRUI():
     def create_overview(self):
         """creates the main Parse Overview including graphs and table"""
 
-        for current_frame in [self.dps_bar_frame, self.overview_table_frame]:
-            self.clear_frame(current_frame) 
+        for current_frame in [self.dps_bar_frame, self.overview_table_frame, 
+                self.dps_graph_frame, self.dmg_graph_frame]:
+            self.clear_frame(current_frame)
+
+        style_sheet_path = self.resource_path('local/oscr_default.mplstyle')
 
         # DPS Bar Graph
         dps = [el[1] for el in self.overview_data[0]]
         players = self.overview_data[2]
         lbs = self.format_bar_labels(dps)
-        with plt.style.context(self.resource_path('local/oscr_default.mplstyle')):
+        with plt.style.context(style_sheet_path):
             f, a = plt.subplots()
             bars = [a.barh(players[j], dps[j], 
                     color=self.theme['bar']['fg']) for j in range(len(dps))]
@@ -291,23 +373,52 @@ class OSCRUI():
         chart = FigureCanvasTkAgg(f, self.dps_bar_frame).get_tk_widget()
         chart.pack(fill=BOTH, ipadx=100, ipady=0)
 
+        # DPS Graph
+        with plt.style.context(style_sheet_path):
+            f, a = plt.subplots()
+            for player, array in self.misc_combat_data[7].items():
+                a.plot(np.divide(array[0], 1000), array[1], 
+                        label=self.clean_player_id(player))
+            a.legend()
+            f.set_figwidth(int(self.windowWidth*0.075))
+        chart = FigureCanvasTkAgg(f, self.dps_graph_frame).get_tk_widget()
+        chart.pack(fill=BOTH, ipadx=100, ipady=0)
+
+        # DMG Bars
+        with plt.style.context(style_sheet_path):
+            f, a = plt.subplots()
+            for player, array in self.misc_combat_data[6].items():
+                a.bar(np.divide(array[0], 1000), array[1], 
+                        label=self.clean_player_id(player), width=0.1)
+            a.legend()
+            f.set_figwidth(int(self.windowWidth*0.075))
+        chart = FigureCanvasTkAgg(f, self.dmg_graph_frame).get_tk_widget()
+        chart.pack(fill=BOTH, ipadx=100, ipady=0)
+
         # Overview Table
         self.format_table(self.overview_data[0])
 
         overview_table = self.create_table(self.overview_table_frame, 
-                *self.overview_data)
+                *self.overview_data, overview=True)
         overview_table.grid(row=0, column=0, sticky='nsew')
         overview_table.grid_propagate(False)
         table_height = overview_table.get_row_heights()[0] * 6.75
         overview_table.configure(height=table_height)
         
 
-    def create_table(self, parent, data, headers=None, index=None):
+    def create_table(self, parent, data, headers=None, index=None, overview=False):
         """Create a default table with data, headers and index and return it"""
+
+        # overview table gets a different font
+        if overview:
+            use_font = {'header_font': self.theme['table']['overview_heading_font'],
+                    'font':self.theme['table']['overview_content_font']}
+        else:
+            use_font = {'header_font': self.theme['table']['heading']['font'],
+                    'font': self.theme['table']['content']['font']}
+
         table = TkSheet(parent=parent, data=data, empty_horizontal=0, 
-                empty_vertical=0, 
-                header_font=self.theme['table']['heading']['font'], 
-                font=self.theme['table']['content']['font'])
+                empty_vertical=0, **use_font)
         table.enable_bindings('single_select', 'drag_select', 
                 'column_select', 'row_select')
         table.set_all_row_heights(height=30, redraw=False)
@@ -327,7 +438,7 @@ class OSCRUI():
         """Create a table with a single column, no header and no index
         and return it. Used for showing older combats"""
         table = TkSheet(parent=parent, data=data, empty_horizontal=0, 
-                empty_vertical=0, font=self.theme['button']['font'])
+                empty_vertical=0, font=self.theme['button']['smallfont'])
         table.enable_bindings('single_select')
         table.align('w', redraw=False)
         table.hide('row_index')
@@ -453,7 +564,7 @@ class OSCRUI():
             self.windowWidth = event.width
             self.windowHeight = event.height
             self.resize_banner()
-            #self.resize_combat_buttons()
+            self.resize_combat_buttons()
 
     def resize_banner(self):
         """resizes the banner to fit the new window size"""
@@ -467,8 +578,27 @@ class OSCRUI():
         """resizes buttons of the older combat selection frame"""
         try:
             self.combat_table.set_all_column_widths(
-                    self.entry_path.winfo_width()-20)
+                    self.entry_path.winfo_width()-25)
         except AttributeError: pass
+
+    def merge_font_tuple(self, item, pfont=None, psize=None, pweight=None):
+        """merges a font tuple with a special value"""
+        return (pfont if pfont is not None else self.theme[item]['font'][0], 
+                psize if psize is not None else self.theme[item]['font'][1],
+                pweight if pweight is not None else self.theme[item]['font'][2])
+
+    def merge_widget_theme(self, item, font=None, size=None, weight=None, **kwargs):
+        """merges a widget theme with custom properties\n
+        custom font properties go into determined parameters"""
+        ret = {}
+        for key, content in self.theme[item].items():
+            if key == 'font':
+                ret['font'] = self.merge_font_tuple(item, font, size, weight)
+            elif key in [kwargs.keys()]:
+                ret[key] = kwargs[key]
+            else:
+                ret[key] = content
+        return ret
 
     def initialize_ui(self):
         """initializes UI of main window"""
@@ -488,10 +618,10 @@ class OSCRUI():
         sidebarWrapper.pack_propagate(False)
         sidebarParter = Frame(sidebarWrapper, bg=self.theme['app']['oscr'], width=4)
         sidebarParter.pack(side=RIGHT, fill=Y, pady=15)
-        self.sidebarFrame = Frame(sidebarWrapper, bg=self.theme['app']['bg'])
-        self.sidebarFrame.pack(side=RIGHT, fill=BOTH, expand=True, padx=10, pady=10)
-        self.sidebarFrame.columnconfigure(0, weight=1)
-        self.sidebarFrame.columnconfigure(1, weight=0)
+        self.sidebar_frame = Frame(sidebarWrapper, bg=self.theme['app']['bg'])
+        self.sidebar_frame.pack(side=RIGHT, fill=BOTH, expand=True, padx=10, pady=10)
+        self.sidebar_frame.columnconfigure(0, weight=1)
+        self.sidebar_frame.columnconfigure(1, weight=0)
 
         self.contentFrame = Frame(self.mainFrame, bg=self.theme['app']['bg'])                   
         self.contentFrame.grid_propagate(False)
@@ -538,7 +668,6 @@ class OSCRUI():
         self.dps_bar_frame = Frame(self.main_notebook)
         self.dps_bar_frame.pack(fill=BOTH)
         self.dps_graph_frame = Frame(self.main_notebook)
-        Label(self.dps_graph_frame, text='here am I').pack()
         self.dmg_graph_frame = Frame(self.main_notebook)
 
         buttonframe = Frame(self.contentFrame, bg=self.theme['app']['bg'])
@@ -559,17 +688,17 @@ class OSCRUI():
         """creates the left sidebar UI"""
 
         # log_path section
-        Label(self.sidebarFrame, text='CombatLog Filepath', 
+        Label(self.sidebar_frame, text='CombatLog Filepath', 
                 **self.theme['label']).grid(row=0, column=0, 
                 sticky='w', pady=(10,0))
         self.log_path = StringVar(self.window, value=self.settings['log_path'])
         self.log_path.trace_add('write', lambda e1, e2, e3: 
                 self.set_setting('log_path', self.log_path.get()))
-        self.entry_path = Entry(self.sidebarFrame, **self.theme['entry'], 
+        self.entry_path = Entry(self.sidebar_frame, **self.theme['entry'], 
                 textvariable=self.log_path)
         self.entry_path.grid(row=1, column=0, sticky='ew', pady=5)
-        button_frame = Frame(self.sidebarFrame, bg=self.theme['app']['bg'])
-        button_frame.grid(row=2, column=0, sticky='ew', pady=(0,10))
+        button_frame = Frame(self.sidebar_frame, bg=self.theme['app']['bg'])
+        button_frame.grid(row=2, column=0, sticky='ew', pady=(0,00))
         button_frame.columnconfigure(0, weight=0)
         button_frame.columnconfigure(1, weight=1)
         button_frame.columnconfigure(2, weight=0)
@@ -580,18 +709,35 @@ class OSCRUI():
                 text='Analyze', command=self.analyze_log_callback)
         analyze_button.grid(row=0, column=1, sticky='ew')
 
+        # Map and difficulty section
+        map_frame = Frame(self.sidebar_frame,  bg=self.theme['app']['bg'])
+        map_frame.grid(row=3, column=0, sticky='ew', pady=15)
+        map_frame.grid_columnconfigure(0, weight=0)
+        map_frame.grid_columnconfigure(1, weight=1)
+        map_frame.grid_columnconfigure(2, weight=0)
+        Label(map_frame, text='Map:', anchor='w', **self.theme['label']).grid(
+                row=0, column=0, sticky='w')
+        Label(map_frame, text='Difficulty:', anchor='w', 
+                **self.theme['label']).grid(row=1, column=0, sticky='w')
+        self.map_label = Label(map_frame, text='', anchor='w', 
+                **self.merge_widget_theme('label', weight='bold'))
+        self.map_label.grid(row=0, column=1, sticky='w')
+        self.difficulty_label = Label(map_frame, text='', anchor='w', 
+                **self.merge_widget_theme('label', weight='bold'))
+        self.difficulty_label.grid(row=1, column=1, sticky='w')
+
         # older combats section
-        self.combat_frame = Frame(self.sidebarFrame, highlightthickness=2, 
+        self.combat_frame = Frame(self.sidebar_frame, highlightthickness=2, 
                 highlightbackground=self.theme['app']['light_bg'], 
                 highlightcolor=self.theme['app']['light_bg'], height=350, 
                 bg=self.theme['app']['bg'])
-        self.combat_frame.grid(row=3, column=0, pady=35, sticky='ew')
+        self.combat_frame.grid(row=4, column=0, pady=(0,15), sticky='ew')
         self.combat_frame.pack_propagate(False)
 
         # misc button section
-        combat_analysis_bt = self.create_default_button(self.sidebarFrame, 
+        combat_analysis_bt = self.create_default_button(self.sidebar_frame, 
                 text='Combat Analysis', command=self.open_combat_analysis)
-        combat_analysis_bt.grid(row=4, column=0, sticky='w')
+        combat_analysis_bt.grid(row=5, column=0, sticky='w')
 
     def change_main_notebook_tab(self, new_tab:Frame):
         """un-packs the currently visible tab and packs the new one"""
@@ -605,6 +751,10 @@ class OSCRUI():
     def set_setting(self, key, value):
         self.settings[key] = value
         self.save_settings()
+
+    def clean_player_id(self, id: str):
+        """cleans player id and returns handle"""
+        return id[id.find(' ')+1:-1]
 
     def blur(self, event):
         """un-focuses self.entry_path on click outside of the widget"""
