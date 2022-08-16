@@ -1704,39 +1704,46 @@ class parser:
         damagePlaceHolder = 0
         bufferDamage = 0
 
-        if targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "targetID" or targetCatagory == "source" or targetCatagory == "petSum":
+        if targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory[1] == "targetID" or targetCatagory == "source" or targetCatagory == "petSum":
             for line in self.splicedCombatlog:
-                if line[self.combatlogDict[playerID]] == playerID:
-                    time = line[self.combatlogDict["date"]]
-                    time = self.timeToTimeAndDate(time)
-                    if firstLine:
-                        firstTime = time
-                        firstLine = False
-                    if lastTime == None:
-                        lastTime = time
-                    if line[self.combatlogDict["ID"]] == playerID:
-                        if (line[self.combatlogDict[targetCatagory]] == Target and (
-                                        targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "source")) or (
-                                        line[self.combatlogDict["petID"]] != "*" and targetCatagory == "petSum") or (
-                                        line[self.combatlogDict["source"]] == Target[0] and line[
-                                        self.combatlogDict["targetID"]] == Target[1]):
-                            if isDamageGraph:
-                                bufferDamage += line[self.combatlogDict["mag1"]]
-                            else:
-                                damagePlaceHolder += line[self.combatlogDict["mag1"]]
-                            if time - lastTime == self.graphDelta:
-                                if isDamageGraph:
-                                    if len(returnArray[0]) == 0:
-                                        returnArray[0].append(self.deltaValue)
-                                        returnArray[1].append(bufferDamage)
-                                        bufferDamage = 0
-                                    else:
-                                        timer = (time - firstTime).total_seconds()
-                                        DPS = damagePlaceHolder/timer
-                                        if len(returnArray[0]) == 0:
-                                            returnArray[0].append(self.deltaValue)
-                                            returnArray[1].append(DPS)
-                                lastTime = time
+                time = line[self.combatlogDict["date"]]
+                time = self.timeToTimeAndDate(time)
+                if firstLine:
+                    firstTime = time
+                    firstLine = False
+                if lastTime == None:
+                    lastTime = time
+                if line[self.combatlogDict["ID"]] == playerID:
+                    if (line[self.combatlogDict[targetCatagory]] == Target and (
+                            targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "source")) or (
+                            line[self.combatlogDict["petID"]] != "*" and targetCatagory == "petSum") or (
+                            line[self.combatlogDict["source"]] == Target[0] and line[
+                        self.combatlogDict["targetID"]] == Target[1]):
+                        if isDamageGraph:
+                            bufferDamage += float(line[self.combatlogDict["mag1"]])
+                        else:
+                            damagePlaceHolder += float(line[self.combatlogDict["mag1"]])
+                if time - lastTime >= self.graphDelta:
+                    if isDamageGraph:
+                        if len(returnArray[0]) == 0:
+                            returnArray[0].append(self.deltaValue)
+                            returnArray[1].append(bufferDamage)
+                            bufferDamage = 0
+                        else:
+                            returnArray[0].append(self.deltaValue + returnArray[0][-1])
+                            returnArray[1].append(bufferDamage)
+                            bufferDamage = 0
+                    else:
+                        if len(returnArray[0]) == 0:
+                            returnArray[0].append(self.deltaValue)
+                            returnArray[1].append(damagePlaceHolder)
+                        else:
+                            timer = (time - firstTime).total_seconds()
+                            DPS = damagePlaceHolder / timer
+                            returnArray[0].append(self.deltaValue + returnArray[0][-1])
+                            returnArray[1].append(DPS)
+                    lastTime = time
+
             return returnArray
         else:
             return "keyError"
@@ -1750,8 +1757,8 @@ def main():
     parserInstance.readCombat()
     parserInstance.generalStatsCopy()
     table = parserInstance.createFrontPageTable()
-    parserInstance.getSpecificGraph(None, None, None, None)
-
+    graph = parserInstance.getSpecificGraph("P[8665825@19965130 Arya@rangerrenze#6027]", "source", "Enhanced Bio-Molecular Photon Torpedo - High Yield I", True)
+    print(graph)
     return table
 
 
