@@ -414,6 +414,8 @@ class parser:
 
         self.isSpace = True
 
+        self.difficultyDetectionDict = {}
+
         self.endTable = []
 
         self.combatTimeRule = "personal"
@@ -1479,10 +1481,37 @@ class parser:
             table.globalStartTime, table.globalFinishTime, table.globalRunTime = self.globalCombatStart, self.globalCombatEnd, self.globalCombatTime
             table.setCombatTime(self.combatTimeRule)
             table.updateTables()
+        if self.difficulty == None:
+            self.detectDifficulty()
 
 
 
-
+    def detectDifficulty(self):
+        for entity in self.tableArray:
+            if entity.name in self.difficultyDetectionDict:
+                difficultyDetectHolder = self.difficultyDetectionDict[entity.name]
+                damageTaken = entity.totalDamageTaken
+                if len(difficultyDetectHolder) == 1: #Entity is used to set 1 difficulty
+                    if damageTaken >= difficultyDetectHolder[0][0]:
+                        self.difficulty = difficultyDetectHolder[0][1]
+                    else:
+                        pass #invalid combat
+                elif len(difficultyDetectHolder) == 2: #enttity is used to set 2 diffuclties
+                    if damageTaken >= difficultyDetectHolder[1][0]:
+                        self.difficulty = difficultyDetectHolder[1][1]
+                    elif damageTaken >= difficultyDetectHolder[0][0]:
+                        self.difficulty = difficultyDetectHolder[0][1]
+                    else:
+                        pass #invalid combat
+                elif len(difficultyDetectHolder) == 3:
+                    if damageTaken >= difficultyDetectHolder[2][0]:
+                        self.difficulty = difficultyDetectHolder[2][1]
+                    elif damageTaken >= difficultyDetectHolder[1][0]:
+                        self.difficulty = difficultyDetectHolder[1][1]
+                    elif damageTaken >= difficultyDetectHolder[0][0]:
+                        self.difficulty = difficultyDetectHolder[0][1]
+                    else:
+                        pass #invalid combat
 
 
 
