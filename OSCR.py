@@ -1629,6 +1629,74 @@ class parser:
         self.generatedUItables()
         return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
 
+    def realTimeParser(self):
+        startline = None
+        tempLine = 0
+        playerDict = {}
+        startTime = None
+        # lineOffset = []
+        # offset = 0
+        print("realtime Parser")
+        running = True
+        while running:
+            if startline == None:
+                with open(self.path, "r") as file:
+                    for line in file:
+                        # lineOffset.append(offset)
+                        # offset += len(line)
+                        splycedLine = line.split("::")
+                        time = self.timeToTimeAndDate(splycedLine[0])
+                        now = datetime.datetime.now()
+                        delta = datetime.timedelta(seconds=1)
+                        if now - time < delta:
+                            startline = line
+                            startTime = time
+                            print("test")
+                            print(startline)
+                            break
+            else:
+                # print("running")
+                foundStart = False
+                with open(self.path, "r") as file:
+                    for line in file:
+                        if line == startline:
+                            foundStart = True
+                        if foundStart:
+                            final = []
+                            splicer1 = line.split("::")
+                            final.append(splicer1[0])
+                            splicer11 = splicer1[1]
+                            splicer2 = splicer11.split(",")
+                            for y in splicer2:
+                                if y == "":
+                                    y = "*"
+                                final.append(y)
+                            line = final
+                            time = self.timeToTimeAndDate(line[self.combatlogDict["date"]])
+                            mag1 = float(line[self.combatlogDict["mag1"]])
+                            mag2 = float(line[self.combatlogDict["mag2"]])
+                            if (line[self.combatlogDict["dmageType"]] == "Shield" and mag1 < 0 and mag2 >= 0) or line[self.combatlogDict["dmageType"]] == "HitPoints":
+                                pass
+                            else:
+                                if mag1 < 0:
+                                    mag1 *= -1
+                                if line[self.combatlogDict["ID"]] in playerDict:
+                                    playerDict[line[self.combatlogDict["ID"]]][0] += mag1
+
+                                else:
+                                    if line[self.combatlogDict["ID"]][0] == "P":
+                                        playerDict.update({line[self.combatlogDict["ID"]]: [mag1, 0]})
+                                    else:
+                                        pass
+                                combatTime = (time - startTime).total_seconds()
+                                if combatTime == 0:
+                                    combatTime = 1
+                                for player in playerDict:
+                                    playerDict[player][1] = playerDict[player][0]/combatTime
+                                    print(player, playerDict[player][1])
+                            timer.sleep(0.5)
+
+
 
     def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
         self.endTable.append(
@@ -1684,7 +1752,10 @@ class parser:
     def generalStatsCopy(self):
         playerArray = []
         returnString = "OSCR - "
-        map = self.queueToAbreviation[self.map]
+        if self.map == None:
+            map = "UNKWN"
+        else:
+            map = self.queueToAbreviation[self.map]
         if self.difficulty == None:
             map = map + "X"
         else:
@@ -1752,7 +1823,10 @@ class parser:
         handle = self.generateHandle(playerID)
         player = self.tableArray[self.playerdict[playerID]]
         returnString = "OSCR - "
-        map = self.queueToAbreviation[self.map]
+        if self.map == None:
+            map = "UNKWN"
+        else:
+            map = self.queueToAbreviation[self.map]
         if self.difficulty == None:
             map = map + "X"
         else:
@@ -1834,18 +1908,21 @@ class parser:
 
 
 def main():
-    path = "combatlog.log"
+    path = "C:\Program Files (x86)\Steam\steamapps\common\Star Trek Online\Star Trek Online\Live\logs\GameClient/combatlog.log"
     parserInstance = parser()
     parserInstance.setPath(path)
-    parserInstance.readCombat()
-    parserInstance.generalStatsCopy()
-    table = parserInstance.createFrontPageTable()
-    for player in parserInstance.tableArray:
-        if player.isPlayer:
-            graph = parserInstance.getStatsCopy("ATKS-in", player.name)
-            print(graph)
-    for row in table:
-        print(row)
+    parserInstance.realTimeParser()
+    # parserInstance.readCombat()
+    # parserInstance.generalStatsCopy()
+    # table = parserInstance.createFrontPageTable()
+    # for player in parserInstance.tableArray:
+    #     if player.isPlayer:
+    #         graph = parserInstance.getStatsCopy("ATKS-in", player.name)
+    #         print(graph)
+    # for row in table:
+    #     print(row)
+
+
 
 
 
