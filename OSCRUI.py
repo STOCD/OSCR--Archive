@@ -2,6 +2,7 @@
 #import tkinter
 #import statistics
 #from threading import Thread
+from cProfile import label
 from tkinter.filedialog import askopenfilename
 #from tkinter.ttk import Scrollbar as TtkScrollbar
 from tkinter import Tk, messagebox, Toplevel
@@ -192,22 +193,27 @@ class OSCRUI():
             if key[0] == 'P':
                 abilities = []
                 for ability in data[key][1]:
-                    abilities.append([ability[0][0], *ability[0][2:]])
+                    if ability[0][0] != 'Pets (sum)':
+                        abilities.append([ability[0][0], *ability[0][2:]])
+                for pet in data[key][2]:
+                    abilities.append([f'{pet[0][0]} (Pet)', *pet[0][2:]])
                 abilities = sorted(abilities, 
                         key=itemgetter(2), reverse=True)
                 player_index = [self.format_data(line[0]) for line in abilities]
                 player_abilities = [line[1:] for line in abilities]
                 self.format_analysis_table(player_abilities)
-                self.players[key[key.find(' ')+1:-1]] = (
-                        player_index, player_abilities)
+                self.players[key] = (player_index, player_abilities)
         
         self.misc_combat_data = data2
+        # update map name and difficulty
         try:
             self.map_label.configure(text=data2[4].replace('_', ' '))
             self.difficulty_label.configure(text=data2[5])
         except AttributeError:
             self.map_label.configure(text=data2[4])
             self.difficulty_label.configure(text=data2[5])
+        """with open('data.json', 'w') as f:
+            json.dump(data, f)"""
         """with open('data.json', 'w') as fil:
             json.dump(self.misc_combat_data[6], fil)
         with open('data1.json', 'w') as fil:
@@ -215,6 +221,7 @@ class OSCRUI():
         
     def open_combat_analysis(self):
         """Creates a smaller window containing the combat analysis"""
+        if len(self.players) < 1: return
 
         c_analysis = Toplevel(self.window, bg=self.theme['app']['oscr'])
         c_analysis.transient(self.window)
@@ -230,9 +237,9 @@ class OSCRUI():
         analysis_frame.grid_columnconfigure(0, weight=1)
         analysis_frame.grid_columnconfigure(1, weight=0)
         analysis_frame.grid_columnconfigure(2, weight=0)
-        analysis_frame.grid_rowconfigure(0, weight=0)
+        analysis_frame.grid_rowconfigure(0, weight=1, uniform='c_a')
         analysis_frame.grid_rowconfigure(1, weight=0)
-        analysis_frame.grid_rowconfigure(2, weight=1)
+        analysis_frame.grid_rowconfigure(2, weight=3, uniform='c_a')
         analysis_frame.grid_rowconfigure(3, weight=0)
         Frame(analysis_frame, highlightthickness=0, 
                 bg=self.theme['app']['oscr'], height=4
@@ -242,41 +249,50 @@ class OSCRUI():
         table_frame.grid(row=2, column=0, sticky='nsew', columnspan=2)
         table_frame.pack_propagate(False)
 
+        # overview graph
+        ov_frame = Frame(analysis_frame, highlightthickness=0, 
+                bg=self.theme['app']['bg'])
+        ov_frame.grid(column=0, row=0, sticky='nsew', columnspan=2)
+        cycler = _PlotCycler()
+        """graph, figure, axes = self.create_small_graph(analysis_frame)
+        graph.grid(column=0, row=0, sticky='nsew', columnspan=2)"""
+
         # create tables, one for each player
-        player_list = list(self.players.keys())
+        player_list = {key[key.find(' ')+1:-1]: key for key in self.players.keys()}
         table_dict = {}
         cols = ['Damage', 'DPS', 'Max One Hit', 'Crits', 'Flanks', 
                 'Attacks', 'Misses', 'CrtH', 'Accuracy', 'Flank Rate', 'Kills', 
                 'Hull Damage', 'Shield Damage', 'Resistance', 'Hull Attacks', 
                 'Final Resist']
-        for player in player_list:
+        for player in player_list.keys():
             player_table = self.create_table(table_frame, 
-                    data=self.players[player][1], headers=cols, 
-                    index=self.players[player][0])
+                    data=self.players[player_list[player]][1], headers=cols, 
+                    index=self.players[player_list[player]][0])
             player_table.row_index_align('w')
             player_table.set_width_of_index_to_text()
+            player_table.extra_bindings('row_select', lambda e, p_l=self.players[player_list[player]][0], p_l_p=player_list[player]: self.c_a_plot_ability(p_l[e.row], p_l_p, ov_frame, cycler))
             table_dict[player] = player_table
 
         # set up overview for the respective player
         overview_frame = Frame(analysis_frame, highlightthickness=0, 
                 bg=self.theme['app']['bg'])
-        overview_frame.grid(column=1, row=0, sticky='nsew', pady=(0, 20))
-        self.generate_overview_frame(player_list[0], overview_frame)
+        """overview_frame.grid(column=1, row=0, sticky='nsew', pady=(0, 20))
+        self.generate_overview_frame(player_list[0], overview_frame)"""
 
         # set up OptionMenu to switch between player tables
-        current_player = StringVar(c_analysis, player_list[0])
+        current_player = StringVar(c_analysis, list(player_list.keys())[0])
         current_player.trace_add('write', lambda e1, e2, e3: 
                 self.c_a_changed_player(table_dict, current_player.get(), 
-                overview_frame))
+                overview_frame, ov_frame, cycler))
         player_selector = OptionMenu(analysis_frame, 
-                current_player, *player_list)
+                current_player, *list(player_list.keys()))
         player_selector.configure(background=self.theme['app']['bg'], 
                 font=self.theme['button']['font'])
-        player_selector.grid(row=0, column=0, sticky='nw')
-        table_dict[player_list[0]].pack(fill=BOTH, expand=True)
+        player_selector.grid(row=3, column=0, sticky='nw')
+        table_dict[list(player_list.keys())[0]].pack(fill=BOTH, expand=True)
 
 
-    def c_a_changed_player(self, tables, change_to, overview_frame):
+    def c_a_changed_player(self, tables, change_to, overview_frame, graph_frame, cycler):
         """shows the table selected in the option menu"""
         if tables[change_to].winfo_ismapped(): 
             return
@@ -285,7 +301,32 @@ class OSCRUI():
                 tables[child].pack_forget()
                 tables[change_to].pack(fill=BOTH, expand=True)
                 self.clear_frame(overview_frame)
-                self.generate_overview_frame(change_to, overview_frame)
+                self.clear_frame(graph_frame)
+                cycler.clear()
+                #self.generate_overview_frame(change_to, overview_frame)
+
+
+    def create_small_graph(self, parent):
+        """creates row graph for the top of the combat_analysis_window"""
+
+        with plt.style.context(self.style_sheet_path):
+            f, a = plt.subplots()
+        graph = FigureCanvasTkAgg(f, parent).get_tk_widget()
+        return graph, f, a
+
+    def c_a_plot_ability(self, ability, player, parent, cycler):
+        if '(Pet)' in ability: return
+        if not isinstance(cycler, _PlotCycler): return
+        cycler.add(self.parser.getSpecificGraph(player, 'source', self.unformat_string(ability), False), ability)
+        with plt.style.context(self.style_sheet_path):
+            f, ax = plt.subplots()
+            for (x, y), pl in cycler.get():
+                ax.plot(x, y, label=pl)
+            ax.legend()
+        self.clear_frame(parent)
+        g = FigureCanvasTkAgg(f, parent).get_tk_widget()
+        g.pack(fill=BOTH, expand=True)
+
 
     def generate_overview_frame(self, player_name, parent):
         """generates a frame containing overview data"""
@@ -344,9 +385,11 @@ class OSCRUI():
             self.get_data(combat=None)
             self.create_overview()
         # subsequent run / click on older combat
-        elif isinstance(combat_id, int): 
+        elif isinstance(combat_id, int):
+            self.combat_table.disable_bindings('single_select') 
             self.get_data(combat_id)
             self.create_overview()
+            self.combat_table.enable_bindings('single_select')
 
         self.terminate_splash()
 
@@ -357,13 +400,11 @@ class OSCRUI():
                 self.dps_graph_frame, self.dmg_graph_frame]:
             self.clear_frame(current_frame)
 
-        style_sheet_path = self.resource_path('local/oscr_default.mplstyle')
-
         # DPS Bar Graph
         dps = [el[1] for el in self.overview_data[0]]
         players = self.overview_data[2]
         lbs = self.format_bar_labels(dps)
-        with plt.style.context(style_sheet_path):
+        with plt.style.context(self.style_sheet_path):
             f, a = plt.subplots()
             bars = [a.barh(players[j], dps[j], 
                     color=self.theme['bar']['fg']) for j in range(len(dps))]
@@ -374,7 +415,7 @@ class OSCRUI():
         chart.pack(fill=BOTH, ipadx=100, ipady=0)
 
         # DPS Graph
-        with plt.style.context(style_sheet_path):
+        with plt.style.context(self.style_sheet_path):
             f, a = plt.subplots()
             for player, array in self.misc_combat_data[7].items():
                 a.plot(np.divide(array[0], 1000), array[1], 
@@ -385,7 +426,7 @@ class OSCRUI():
         chart.pack(fill=BOTH, ipadx=100, ipady=0)
 
         # DMG Bars
-        with plt.style.context(style_sheet_path):
+        with plt.style.context(self.style_sheet_path):
             f, a = plt.subplots()
             for player, array in self.misc_combat_data[6].items():
                 a.bar(np.divide(array[0], 1000), array[1], 
@@ -481,7 +522,18 @@ class OSCRUI():
             el = el.replace('â€˜', "'")
             return el
         else:
-            return str(el)        
+            return str(el)
+
+    def unformat_string(self, el: str):
+        """reverses the string-formatting done by self.format_data"""
+        el = el.replace('–', 'â€“')
+        el = el.replace('Ü', 'Ãœ')
+        el = el.replace('ü', 'Ã¼')
+        el = el.replace('ß', 'ÃŸ')
+        el = el.replace('ö', 'Ã¶')
+        el = el.replace('ä', 'Ã¤')
+        el = el.replace("'", 'â€˜')
+        return el
 
     def create_bar_label(self, bar, axis: Axes , data, current, label, n):
         """Add label to bar"""
@@ -528,8 +580,10 @@ class OSCRUI():
 
     def browse_path(self):
         """prompts user to browse combatlog file and writes it to self.log_path"""
-        self.log_path.set(askopenfilename(filetypes=[('CombatLog files', '*.log'),
-                ('All Files', '*.*')], initialdir=os.getcwd()))
+        p = askopenfilename(filetypes=[('CombatLog files', '*.log'),
+                ('All Files', '*.*')], initialdir=os.getcwd())
+        if p != '':
+            self.log_path.set(p)
 
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -792,6 +846,7 @@ class OSCRUI():
         """initializes backend data sets"""
         self.overview_data = [[],[],[]]  # [[data], [headers], [indexes]]
         self.players = {}
+        self.style_sheet_path = self.resource_path('local/oscr_default.mplstyle')
         self.load_settings()
 
     def save_settings(self):
@@ -851,6 +906,24 @@ class PlainButton(Frame):
 
     def on_leave(self, event):
         self.configure(highlightbackground=self.bordercolor)
+
+class _PlotCycler():    
+    def __init__(self):
+        self.data = []
+    
+    def add(self, li: list, p: str):
+        if len(li) != 2: return
+        if not isinstance(li[0], list) or not isinstance(li[1], list): return
+        if len(self.data) >= 5:
+            self.data = [(li, p)] + self.data[:4]
+        else:
+            self.data = [(li, p)] + self.data
+
+    def get(self):
+        return self.data
+
+    def clear(self):
+        self.data = []
 
 
 OSCRUI().run()
