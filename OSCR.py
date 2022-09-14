@@ -879,8 +879,15 @@ class parser:
 
 
             elif x[self.combatlogDict["source"]] == "Warp Core Breach":
-                if self.warpCoreBreach == None:
-                    self.warpCoreBreach = players("WarpCoreBreach", False, self.timeToTimeAndDate(x[self.combatlogDict["date"]]))
+                playerID = "warpCoreBreach"
+                attacker = None
+                for id in self.tableArray:
+                    if id.name == playerID:
+                        attacker = id
+                if attacker == None:
+                    self.tableArray.append(players(playerID, False, self.timeToTimeAndDate(x[self.combatlogDict["date"]])))
+                    
+
                 #Do something for WCB damage tracking
                 pass
 
@@ -1865,6 +1872,9 @@ class parser:
             for line in self.splicedCombatlog:
                 time = line[self.combatlogDict["date"]]
                 time = self.timeToTimeAndDate(time)
+                damage = float(line[self.combatlogDict["mag1"]])
+                if damage < 0:
+                    damage *= -1
                 if firstLine:
                     firstTime = time
                     firstLine = False
@@ -1877,9 +1887,9 @@ class parser:
                             line[self.combatlogDict["source"]] == Target[0] and line[
                         self.combatlogDict["targetID"]] == Target[1]):
                         if isDamageGraph:
-                            bufferDamage += float(line[self.combatlogDict["mag1"]])
+                            bufferDamage += damage
                         else:
-                            damagePlaceHolder += float(line[self.combatlogDict["mag1"]])
+                            damagePlaceHolder += damage
                 if time - lastTime >= self.graphDelta:
                     if isDamageGraph:
                         if len(returnArray[0]) == 0:
