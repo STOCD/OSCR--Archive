@@ -48,19 +48,28 @@ class players:          #main container class, used for saving stats on all enti
         self.kills = 0
         self.runtime = 0
         self.endTime = 0
-        self.finishTime = 0
         self.acc = 0
         self.resist = 0
         self.hullAttacks = 0
         self.finalresist = 0
-        self.ATKSin = 0
+        self.ATKSinPercentage = 0
+        self.dmgPercentage = 0
+        self.percentageTaken = 0
+        self.percentageHealed = 0
+        self.ATKSpMin = 0
+        self.HPS = 0
+        self.globalFinishTime = None
+        self.globalStartTime = None
+        self.globalRunTime = None
 
-
-    def updateStats(self, time2):
+    def updateStats(self, time2, midParseUpdate=True):
         self.temptotalAttacks = self.totalAttacks - self.misses
-        self.totalTime = (time2 - self.startTime).total_seconds()
-        self.runtime = self.totalTime
+        if midParseUpdate:
+            self.totalTime = (time2 - self.startTime).total_seconds()
+            self.runtime = self.totalTime
         self.endTime = time2
+        if self.totalTime > 0 and self.totalHeals > 0:
+            self.HPS = self.totalHeals / self.totalTime
         if not self.hullAttacks == 0:
             self.finalresist = self.resist / self.hullAttacks
         if not self.totalTime == 0:
@@ -79,6 +88,7 @@ class players:          #main container class, used for saving stats on all enti
             self.flankRate = 0
 
     def updateTables(self):
+        self.updateStats(self.endTime, False)
         self.updateDMGOutTable()
         self.updatePetsDMGOutTable()
         self.updateDMGInTable()
@@ -291,6 +301,17 @@ class players:          #main container class, used for saving stats on all enti
         else:
             return str(entry)
 
+    def setCombatTime(self, combatTimeRule):
+        if self.endTime == 0:
+            self.endTime = self.globalFinishTime
+        if combatTimeRule == "personal":
+            self.runtime = (self.endTime-self.startTime).total_seconds()
+        elif combatTimeRule == "personalStartGlobalEnd":
+            self.runtime = (self.globalFinishTime - self.startTime).total_seconds()
+        elif combatTimeRule == "Global":
+            self.runtime = self.globalRunTime
+        elif combatTimeRule == "globalStartPersonalEnd":
+            self.runtime = (self.endTime - self.globalStartTime)
 
 class parser:
     def __init__(self):
@@ -324,6 +345,11 @@ class parser:
         self.damageChart = {}
         self.DPSChart = {}
         self.bufferedDamage = {}
+        self.globalCombatTime = None
+        self.globalCombatStart = None
+        self.globalCombatEnd = None
+
+
 
         self.difficultyToAbreviation = {"Elite": "E", "Advanced": "A", "Normal": "N"}
         self.AbreviationToDifficulty = {"N": "Normal", "Advanced": "A", "E": "Elite"}
@@ -388,7 +414,11 @@ class parser:
 
         self.isSpace = True
 
+        self.difficultyDetectionDict = {}
+
         self.endTable = []
+
+        self.combatTimeRule = "personal"
 
 
     def resetParser(self):
@@ -408,6 +438,9 @@ class parser:
         self.damageChart = {}
         self.DPSChart = {}
         self.bufferedDamage = {}
+        self.globalCombatTime = None
+        self.globalCombatStart = None
+        self.globalCombatEnd = None
     def softResetParser(self):
         self.warpCoreBreach = None
         self.combatlog = []
@@ -424,6 +457,9 @@ class parser:
         self.damageChart = {}
         self.DPSChart = {}
         self.bufferedDamage = {}
+        self.globalCombatTime = None
+        self.globalCombatStart = None
+        self.globalCombatEnd = None
     def setPath(self, path):
         self.path = path
     def createTableInstance(self, line):  # creates a new class instance and appends to list
@@ -440,6 +476,9 @@ class parser:
             self.tableArray.append(players(ID, False, self.timeToTimeAndDate(line[self.combatlogDict["date"]])))
             self.playerdict.update({ID: self.counter2})
             self.counter2 += 1
+    def getGlobalTime(self):
+        self.globalCombatTime = (self.globalCombatEnd - self.globalCombatStart).total_seconds()
+
 
     def timeToTimeAndDate(self, timeSplice):  # turns combatlog time string into TimeDate object
         timeSplice = timeSplice.split(":")
@@ -507,6 +546,7 @@ class parser:
         return crit, miss, flank, kill
 
     def combatLogAnalysis(self):
+        firstLine = True
         for x in self.combatlog:
             final = []
             splicer1 = x.split("::")
@@ -530,6 +570,9 @@ class parser:
             # if not x[combatlogDict["targetID"]] in templist and x[combatlogDict["sourceID"]] == "P[12231228@5044720 CasualSAB@spencerb96]":
             #     templist.append(x[combatlogDict["targetID"]])
             #     print("adsfaf", x[combatlogDict["targetID"]])
+            if firstLine:
+                self.globalCombatStart = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
+                firstLine = False
 
             attacker = self.tableArray[self.playerdict[x[self.combatlogDict["ID"]]]]
 
@@ -568,6 +611,9 @@ class parser:
                     damaged = self.tableArray[self.playerdict[x[self.combatlogDict["targetID"]]]]
                 else:
                     damaged = players("name", False, None)
+                if damage1 > attacker.maxOneHeal:
+                    attacker.maxOneHeal = damage1
+                    attacker.maxOneHealWeapon = source
 
                 #non pet heals
                 if x[self.combatlogDict["pet"]] == "*" or x[self.combatlogDict["targetID"]] == "*":
@@ -833,8 +879,15 @@ class parser:
 
 
             elif x[self.combatlogDict["source"]] == "Warp Core Breach":
-                if self.warpCoreBreach == None:
-                    self.warpCoreBreach = players("WarpCoreBreach", False, self.timeToTimeAndDate(x[self.combatlogDict["date"]]))
+                playerID = "warpCoreBreach"
+                attacker = None
+                for id in self.tableArray:
+                    if id.name == playerID:
+                        attacker = id
+                if attacker == None:
+                    self.tableArray.append(players(playerID, False, self.timeToTimeAndDate(x[self.combatlogDict["date"]])))
+                    
+
                 #Do something for WCB damage tracking
                 pass
 
@@ -850,7 +903,7 @@ class parser:
                         attacker.totaldamage += damage1
                         if damage1 > attacker.maxOneHit:
                             attacker.maxOneHit = damage1
-
+                            attacker.maxOneHitWeapon = source
                         resist = 0
                         if not damagetype == "Shield" and not isMiss:
                             if damage2 == 0:
@@ -1044,6 +1097,8 @@ class parser:
                         attacker.totaldamage += damage1
                         if damage1 > attacker.maxOneHit:
                             attacker.maxOneHit = damage1
+                            attacker.maxOneHitWeapon = x[self.combatlogDict["pet"]]
+
 
                         if x[self.combatlogDict["targetID"]] in self.playerList:
                             damaged = self.tableArray[self.playerdict[x[self.combatlogDict["targetID"]]]]
@@ -1426,13 +1481,44 @@ class parser:
                 self.bufferedDamage = {}
 
             self.lastGraphTime = time
+            self.globalCombatEnd = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
 
+        self.getGlobalTime()
         for table in self.tableArray:
+            table.globalStartTime, table.globalFinishTime, table.globalRunTime = self.globalCombatStart, self.globalCombatEnd, self.globalCombatTime
+            table.setCombatTime(self.combatTimeRule)
             table.updateTables()
+        if self.difficulty == None:
+            self.detectDifficulty()
 
 
 
-
+    def detectDifficulty(self):
+        for entity in self.tableArray:
+            if entity.name in self.difficultyDetectionDict:
+                difficultyDetectHolder = self.difficultyDetectionDict[entity.name]
+                damageTaken = entity.totalDamageTaken
+                if len(difficultyDetectHolder) == 1: #Entity is used to set 1 difficulty
+                    if damageTaken >= difficultyDetectHolder[0][0]:
+                        self.difficulty = difficultyDetectHolder[0][1]
+                    else:
+                        pass #invalid combat
+                elif len(difficultyDetectHolder) == 2: #enttity is used to set 2 diffuclties
+                    if damageTaken >= difficultyDetectHolder[1][0]:
+                        self.difficulty = difficultyDetectHolder[1][1]
+                    elif damageTaken >= difficultyDetectHolder[0][0]:
+                        self.difficulty = difficultyDetectHolder[0][1]
+                    else:
+                        pass #invalid combat
+                elif len(difficultyDetectHolder) == 3:
+                    if damageTaken >= difficultyDetectHolder[2][0]:
+                        self.difficulty = difficultyDetectHolder[2][1]
+                    elif damageTaken >= difficultyDetectHolder[1][0]:
+                        self.difficulty = difficultyDetectHolder[1][1]
+                    elif damageTaken >= difficultyDetectHolder[0][0]:
+                        self.difficulty = difficultyDetectHolder[0][1]
+                    else:
+                        pass #invalid combat
 
 
 
@@ -1544,11 +1630,81 @@ class parser:
         self.setPath(path)
         self.readCombat()
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary , self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
     def readPreviousCombatwithUITables(self, combatID):
         self.readPreviousCombat(combatID)
         self.generatedUItables()
-        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary , self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart
+
+    def realTimeParser(self):
+        startline = None
+        tempLine = 0
+        playerDict = {}
+        startTime = None
+        # lineOffset = []
+        # offset = 0
+        print("realtime Parser")
+        running = True
+        while running:
+            if startline == None:
+                with open(self.path, "r") as file:
+                    for line in file:
+                        # lineOffset.append(offset)
+                        # offset += len(line)
+                        splycedLine = line.split("::")
+                        time = self.timeToTimeAndDate(splycedLine[0])
+                        now = datetime.datetime.now()
+                        delta = datetime.timedelta(seconds=1)
+                        if now - time < delta:
+                            startline = line
+                            startTime = time
+                            print("test")
+                            print(startline)
+                            break
+            else:
+                # print("running")
+                foundStart = False
+                with open(self.path, "r") as file:
+                    for line in file:
+                        if line == startline:
+                            foundStart = True
+                        if foundStart:
+                            final = []
+                            splicer1 = line.split("::")
+                            final.append(splicer1[0])
+                            splicer11 = splicer1[1]
+                            splicer2 = splicer11.split(",")
+                            for y in splicer2:
+                                if y == "":
+                                    y = "*"
+                                final.append(y)
+                            line = final
+                            time = self.timeToTimeAndDate(line[self.combatlogDict["date"]])
+                            mag1 = float(line[self.combatlogDict["mag1"]])
+                            mag2 = float(line[self.combatlogDict["mag2"]])
+                            if (line[self.combatlogDict["dmageType"]] == "Shield" and mag1 < 0 and mag2 >= 0) or line[self.combatlogDict["dmageType"]] == "HitPoints":
+                                pass
+                            else:
+                                if mag1 < 0:
+                                    mag1 *= -1
+                                if line[self.combatlogDict["ID"]] in playerDict:
+                                    playerDict[line[self.combatlogDict["ID"]]][0] += mag1
+
+                                else:
+                                    if line[self.combatlogDict["ID"]][0] == "P":
+                                        playerDict.update({line[self.combatlogDict["ID"]]: [mag1, 0]})
+                                    else:
+                                        pass
+                                combatTime = (time - startTime).total_seconds()
+                                if combatTime == 0:
+                                    combatTime = 1
+                                for player in playerDict:
+                                    playerDict[player][1] = playerDict[player][0]/combatTime
+                                    print(player, playerDict[player][1])
+                            timer.sleep(0.5)
+
+
+
     def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
         self.endTable.append(
             ["player", "combatTime", "DPS", "Total Damage", "CritH", "MaxOneHit", "%debuff", "%damage", "%damage taken",
@@ -1584,13 +1740,16 @@ class parser:
                         player.finalresist, percentageDamage, percentageTaken, percentageATS, player.totalHeals,
                         percentageHeals, player.deaths]
                 temptable.append(temp)
+                player.dmgPercentage = percentageDamage
+                player.ATKSpMin = round( player.totalAttacksTaken/player.runtime,2)
+                player.ATKSinPercentage = percentageATS
+                player.percentageTaken = percentageTaken
+                player.percentageHealed = percentageHeals
+
         temptable.sort(key=lambda x:x[2], reverse=True)
         for row in temptable:
             self.endTable.append(row)
 
-
-    def generateIndividualGraphs(self):
-        pass
 
 
     def createFrontPageTable(self):
@@ -1600,7 +1759,10 @@ class parser:
     def generalStatsCopy(self):
         playerArray = []
         returnString = "OSCR - "
-        map = self.queueToAbreviation[self.map]
+        if self.map == None:
+            map = "UNKWN"
+        else:
+            map = self.queueToAbreviation[self.map]
         if self.difficulty == None:
             map = map + "X"
         else:
@@ -1666,8 +1828,12 @@ class parser:
 
     def getStatsCopy(self, wantedStat, playerID):
         handle = self.generateHandle(playerID)
+        player = self.tableArray[self.playerdict[playerID]]
         returnString = "OSCR - "
-        map = self.queueToAbreviation[self.map]
+        if self.map == None:
+            map = "UNKWN"
+        else:
+            map = self.queueToAbreviation[self.map]
         if self.difficulty == None:
             map = map + "X"
         else:
@@ -1679,17 +1845,15 @@ class parser:
         returnString = returnString + map
         returnString = returnString + handle + " - "
         if wantedStat == "MaxOneHit":
-            returnString = returnString + "Max One-Hit: "
+            returnString = returnString + "Max One-Hit: " + str(player.maxOneHit) + " (" + str(player.maxOneHitWeapon) + ")"
+        elif wantedStat == "dmgOut":
+            returnString = returnString + "DMG out: " + str(self.rounder(player.totaldamage)) + " DPS: " + str(self.rounder(player.DPS)) + " (" + str(round(player.dmgPercentage ,1)) + "% of team)"
         elif wantedStat == "ATKS-in":
-            returnString = returnString + "ATKS-in: "
-            if self.endTable == []:
-                self.generateFrontPageTable()
-
-
+            returnString = returnString + "ATKS-in: " + str(player.totalAttacksTaken) + " ATPS " + str(self.rounder(player.ATKSpMin)) + " (" + str(round(player.ATKSinPercentage, 1)) + "% of team)"
         elif wantedStat == "Heal-Out":
-            returnString = returnString + "Heal-Out: "
+            returnString = returnString + "Heal out: " + str(self.rounder(player.totalHeals)) + " HPS: " + str(self.rounder(player.HPS)) + " (" + str(round(player.percentageHealed ,1)) + "% of team)"
         elif wantedStat == "MaxOneHeal":
-            returnString = returnString + "Max One-Heal"
+            returnString = returnString + "Max One-Heal: " + str(player.maxOneHeal) + " (" + str(player.maxOneHealWeapon) + ")"
         else:
             return "keyError"
         return returnString
@@ -1704,39 +1868,49 @@ class parser:
         damagePlaceHolder = 0
         bufferDamage = 0
 
-        if targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "targetID" or targetCatagory == "source" or targetCatagory == "petSum":
+        if targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory[1] == "targetID" or targetCatagory == "source" or targetCatagory == "petSum":
             for line in self.splicedCombatlog:
-                if line[self.combatlogDict[playerID]] == playerID:
-                    time = line[self.combatlogDict["date"]]
-                    time = self.timeToTimeAndDate(time)
-                    if firstLine:
-                        firstTime = time
-                        firstLine = False
-                    if lastTime == None:
-                        lastTime = time
-                    if line[self.combatlogDict["ID"]] == playerID:
-                        if (line[self.combatlogDict[targetCatagory]] == Target and (
-                                        targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "source")) or (
-                                        line[self.combatlogDict["petID"]] != "*" and targetCatagory == "petSum") or (
-                                        line[self.combatlogDict["source"]] == Target[0] and line[
-                                        self.combatlogDict["targetID"]] == Target[1]):
-                            if isDamageGraph:
-                                bufferDamage += line[self.combatlogDict["mag1"]]
-                            else:
-                                damagePlaceHolder += line[self.combatlogDict["mag1"]]
-                            if time - lastTime == self.graphDelta:
-                                if isDamageGraph:
-                                    if len(returnArray[0]) == 0:
-                                        returnArray[0].append(self.deltaValue)
-                                        returnArray[1].append(bufferDamage)
-                                        bufferDamage = 0
-                                    else:
-                                        timer = (time - firstTime).total_seconds()
-                                        DPS = damagePlaceHolder/timer
-                                        if len(returnArray[0]) == 0:
-                                            returnArray[0].append(self.deltaValue)
-                                            returnArray[1].append(DPS)
-                                lastTime = time
+                time = line[self.combatlogDict["date"]]
+                time = self.timeToTimeAndDate(time)
+                damage = float(line[self.combatlogDict["mag1"]])
+                if damage < 0:
+                    damage *= -1
+                if firstLine:
+                    firstTime = time
+                    firstLine = False
+                if lastTime == None:
+                    lastTime = time
+                if line[self.combatlogDict["ID"]] == playerID:
+                    if (line[self.combatlogDict[targetCatagory]] == Target and (
+                            targetCatagory == "pet" or targetCatagory == "petID" or targetCatagory == "source")) or (
+                            line[self.combatlogDict["petID"]] != "*" and targetCatagory == "petSum") or (
+                            line[self.combatlogDict["source"]] == Target[0] and line[
+                        self.combatlogDict["targetID"]] == Target[1]):
+                        if isDamageGraph:
+                            bufferDamage += damage
+                        else:
+                            damagePlaceHolder += damage
+                if time - lastTime >= self.graphDelta:
+                    if isDamageGraph:
+                        if len(returnArray[0]) == 0:
+                            returnArray[0].append(self.deltaValue)
+                            returnArray[1].append(bufferDamage)
+                            bufferDamage = 0
+                        else:
+                            returnArray[0].append(self.deltaValue + returnArray[0][-1])
+                            returnArray[1].append(bufferDamage)
+                            bufferDamage = 0
+                    else:
+                        if len(returnArray[0]) == 0:
+                            returnArray[0].append(self.deltaValue)
+                            returnArray[1].append(damagePlaceHolder)
+                        else:
+                            timer = (time - firstTime).total_seconds()
+                            DPS = damagePlaceHolder / timer
+                            returnArray[0].append(self.deltaValue + returnArray[0][-1])
+                            returnArray[1].append(DPS)
+                    lastTime = time
+
             return returnArray
         else:
             return "keyError"
@@ -1744,15 +1918,21 @@ class parser:
 
 
 def main():
-    path = "combatlog.log"
+    path = "C:\Program Files (x86)\Steam\steamapps\common\Star Trek Online\Star Trek Online\Live\logs\GameClient/combatlog.log"
     parserInstance = parser()
     parserInstance.setPath(path)
-    parserInstance.readCombat()
-    parserInstance.generalStatsCopy()
-    table = parserInstance.createFrontPageTable()
-    parserInstance.getSpecificGraph(None, None, None, None)
+    parserInstance.realTimeParser()
+    # parserInstance.readCombat()
+    # parserInstance.generalStatsCopy()
+    # table = parserInstance.createFrontPageTable()
+    # for player in parserInstance.tableArray:
+    #     if player.isPlayer:
+    #         graph = parserInstance.getStatsCopy("ATKS-in", player.name)
+    #         print(graph)
+    # for row in table:
+    #     print(row)
 
-    return table
+
 
 
 
