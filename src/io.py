@@ -1,7 +1,9 @@
 import os
 import sys
 import re
+from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtGui import QIcon, QPixmap
+from PyQt6.QtCore import Qt
 
 def get_asset_path(self, asset_name) -> str:
     """
@@ -13,7 +15,7 @@ def get_asset_path(self, asset_name) -> str:
     else:
         return ''
 
-def load_icon(self, path, h=None) -> QIcon:
+def load_icon(self, path) -> QIcon:
     """
     Loads icon from path and returns it.
 
@@ -21,10 +23,19 @@ def load_icon(self, path, h=None) -> QIcon:
     - :param path: path to icon
     - :param h: height to which the icon should be scaled
     """
-    pm = QPixmap(get_asset_path(self, path))
-    if isinstance(h, int):
-        pm.scaledToHeight(h)
-    return QIcon(pm)
+    return QIcon(get_asset_path(self, path))
+
+def browse_path(self, path=None, types='Any File (*.*)'):
+    if path is None:
+        path = self.settings['base_path']
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        path = self.settings['base_path']
+    f = QFileDialog.getOpenFileName(self.window, 'Open Log', path, types)[0]
+    if os.path.exists(f):
+        return f
+    else:
+        return ''
 
 def sanitize_file_name(self, txt, chr_set='extended') -> str:
     """Converts txt to a valid filename.
@@ -73,3 +84,12 @@ def sanitize_file_name(self, txt, chr_set='extended') -> str:
     result = re.sub(r"^ ", FILLER, result)
 
     return result
+
+def format_path(self, path:str):
+    path = path.replace(chr(92), '/')
+    if path[1] == ':' and path[0] >= 'a' and path[0] <= 'z':
+        path = path[0].capitalize() + path[1:]
+    if path[-1] != '/':
+        if os.path.isdir(path):
+            path += '/'
+    return path

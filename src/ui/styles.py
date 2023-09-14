@@ -38,12 +38,18 @@ def merge_style(self, s1:dict, s2:dict):
 def get_css(self, style:dict):
     css = ''
     for key, val in style.items():
-        if key == 'font' or key == 'hover':
-            continue
-        elif isinstance(val, int):
-            css += f'{key}:{val}px;'
+        if isinstance(val, str) and val[0] == '@':
+            v = self.theme['defaults'][val[1:]]
         else:
-            css += f'{key}:{val};'
+            v = val
+        if key == 'font' or key == 'hover' or key == 'focus':
+            continue
+        elif isinstance(v, int):
+            css += f'{key}:{v}px;'
+        elif isinstance(v, tuple):
+            css += f'''{key}:{'px '.join(map(str, v))}px;'''
+        else:
+            css += f'{key}:{v};'
     return css
 
 def get_style_class(self, class_name:str, widget, override={}):
@@ -60,6 +66,8 @@ def get_style_class(self, class_name:str, widget, override={}):
     main = f'{class_name} {{{get_css(self, style)}}}'
     if 'hover' in style:
         main += f''' {class_name}:hover {{{get_css(self, style['hover'])}}}'''
+    if 'focus' in style:
+        main += f''' {class_name}:focus {{{get_css(self, style['focus'])}}}'''
     return main
 
 def theme_font(self, key, font_spec:tuple=()):
@@ -76,4 +84,13 @@ def theme_font(self, key, font_spec:tuple=()):
     except KeyError:
         font_weight = QFont.Weight.Normal
     return QFont(font_family, font[1], font_weight)
+
+def create_style_sheet(self, d:dict):
+    """
+    Creates Stylesheet from dictionary. Dictionary keys represent css selector.
+    """
+    style = ''
+    for s, v in d.items():
+        style += f'{s} {{{get_css(self, v)}}}'
+    return style
 
