@@ -1,7 +1,7 @@
 import os
 import sys
 import re
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QMessageBox
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtCore import Qt
 
@@ -93,3 +93,12 @@ def format_path(self, path:str):
         if os.path.isdir(path):
             path += '/'
     return path
+
+def show_warning(self, title, message):
+    error = QMessageBox()
+    error.setIcon(QMessageBox.Icon.Warning), 
+    error.setText(message)
+    error.setWindowTitle(title)
+    error.setStandardButtons(QMessageBox.StandardButton.Ok)
+    error.setWindowIcon(QIcon(get_asset_path(self, 'oscr_icon_small.png')))
+    error.exec()

@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QSizePolicy, QPushButton, QFrame, QLabel
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QPixmap, QPainter, QIcon
-from PyQt6.QtCore import QRect, Qt
+from PyQt6.QtCore import QRect, Qt, QSize
 from types import FunctionType, BuiltinFunctionType, MethodType
 
 FUNC = (FunctionType, BuiltinFunctionType, MethodType)
@@ -14,6 +14,7 @@ SMINMAX = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
 ATOP = Qt.AlignmentFlag.AlignTop
 ARIGHT = Qt.AlignmentFlag.AlignRight
 ALEFT = Qt.AlignmentFlag.AlignLeft
+ACENTER = Qt.AlignmentFlag.AlignCenter
 
 class WidgetBuilder():
 
@@ -43,6 +44,26 @@ class WidgetBuilder():
             button.setFont(self.theme_font(style, style_override['font']))
         else:
             button.setFont(self.theme_font(style))
+        button.setSizePolicy(SMAXMAX)
+        return button
+
+    def create_icon_button(self, icon, style:str='', parent=None, style_override={}):
+        """
+        Creates a button showing an icon according to style with parent.
+
+        Parameters:
+        - :param icon: icon to be shown on the button
+        - :param style: name of the style as in self.theme or style dict
+        - :param parent: parent of the button (optional)
+        - :param style_override: style dict to override default style (optional)
+
+        :return: configured QPushButton
+        """
+        button = QPushButton('', parent)
+        button.setIcon(icon)
+        button.setStyleSheet(self.get_style_class('QPushButton', style, style_override))
+        icon_size = self.theme['s.c']['button_icon_size']
+        button.setIconSize(QSize(icon_size, icon_size))
         button.setSizePolicy(SMAXMAX)
         return button
 
@@ -83,7 +104,7 @@ class WidgetBuilder():
             label.setFont(self.theme_font(style))
         return label
         
-    def create_button_series(self, parent, buttons:dict, style, shape:str='row', seperator:str=''):
+    def create_button_series(self, parent, buttons:dict, style, shape:str='row', seperator:str='', ret=False):
         """
         Creates a row / column of buttons.
 
@@ -109,6 +130,8 @@ class WidgetBuilder():
     	
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+
+        button_list = []
         
         if seperator != '':
             sep_style = {'color':defaults['color'],'margin':0, 'padding':0, 'background':'rgba(0,0,0,0)'}
@@ -126,11 +149,14 @@ class WidgetBuilder():
                 layout.addWidget(bt, stretch, detail['align'])
             else:
                 layout.addWidget(bt, stretch)
+            button_list.append(bt)
             if seperator != '' and i < (len(buttons) - 1):
                 sep_label = self.create_label(seperator, 'label', parent, sep_style)
+                sep_label.setSizePolicy(SMAXMIN)
                 layout.addWidget(sep_label)
         
-        return layout
+        if ret: return layout, tuple(button_list)
+        else: return layout
             
 
 class FlipButton(QPushButton):

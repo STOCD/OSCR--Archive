@@ -9,6 +9,7 @@ class Launcher():
     theme = {
         'app': {
             'bg': '#1a1a1a',
+            'fg': '#eeeeee',
             'oscr': '#c82934',
             'margin': 10,
             'font': ('Overpass', 15, 'normal'),
@@ -47,6 +48,8 @@ class Launcher():
             'oscr': '#c82934',
             'font': ('Overpass', 15, 'normal'),
             'fg': '#eeeeee',
+            'mfg': '#bbbbbb',
+            'bc': '#888888',
             'sep': 2,
             'margin': 10
         },
@@ -75,13 +78,14 @@ class Launcher():
             'background': 'none',
             'color': '@fg',
             'text-decoration': 'none',
-            'border': 'none',
-            'margin': (3, 0, 3, 0),
-            'padding': 0,
-            'font': ('Overpass', 15, 'bold'),
-            'hover': {
-                'text-decoration': 'underline',
-                'color': '@fg'
+            'border': 'none', #'1px solid #606060',
+            'border-radius': 2,
+            'margin': (3, 10, 3, 10),
+            'padding': (2, 5, 0, 5),
+            'font': ('Overpass', 15, 'medium'),
+            ':hover': {
+                'color': '@fg',
+                'border': '1px solid #c82934'
             }
         },
         'menu_button': {
@@ -90,12 +94,12 @@ class Launcher():
             'text-decoration': 'none',
             'border': 'none',
             'margin-left': 10,
-            'margin-top': 5,
+            'margin-top': 6,
             'margin-bottom': 4,
             'margin-right': 10,
             'padding': 0,
             'font': ('Overpass', 20, 'bold'),
-            'hover': {
+            ':hover': {
                 'text-decoration': 'underline',
                 'color': '@fg'
             }
@@ -109,8 +113,21 @@ class Launcher():
             'margin-bottom': 1,
             'margin-right': 2,
             'padding': (2, 0, 2, 0),
-            'hover': {
+            ':hover': {
                 'background': 'rgba(136,136,136,.2)'
+            }
+        },
+        'icon_button': {
+            'background': 'none',
+            'border': '1px solid #888888',
+            'border-radius': 3,
+            'margin-left': 1,
+            'margin-top': 1,
+            'margin-bottom': 1,
+            'margin-right': 1,
+            'padding': (2, 0, 2, 0),
+            ':hover': {
+                'border-color': '@oscr'
             }
         },
         'entry': {
@@ -119,7 +136,7 @@ class Launcher():
             'border': '1px solid #888888',
             'border-radius': 2,
             'font': ('Overpass', 12, 'normal'),
-            'focus': {
+            ':focus': {
                 'border-color': '@oscr'
             }
         },
@@ -129,6 +146,36 @@ class Launcher():
             'border': '1px solid #888888',
             'border-radius': 2,
             'font': ('Overpass', 10, 'normal'),
+            'outline': 0,
+            '::item': {
+                'border': '1px solid #404040'
+            },
+            '::item:selected': {
+                'background': 'none',
+                'border': '1px solid #c82934',
+                'border-radius': 2,
+            },
+            '::item:selected:!active': {
+                'color':'@fg'
+            },
+            '::item:hover': {
+                'background': '#20c82934',
+            },
+        },
+        'tabber': {
+            'background': 'none',
+            'border': 'none',
+            'margin': 0,
+            'padding': 0,
+            '::pane': {
+                'border': 'none'
+            }
+        },
+        'tabber_tab': {
+            '::tab': {
+                'height': 0,
+                'width': 0
+            }
         },
         's.c': {
             'button_icon_size': 24

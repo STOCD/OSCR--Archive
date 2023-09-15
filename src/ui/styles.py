@@ -42,7 +42,7 @@ def get_css(self, style:dict):
             v = self.theme['defaults'][val[1:]]
         else:
             v = val
-        if key == 'font' or key == 'hover' or key == 'focus':
+        if key.startswith(':') or key == 'font':
             continue
         elif isinstance(v, int):
             css += f'{key}:{v}px;'
@@ -64,10 +64,9 @@ def get_style_class(self, class_name:str, widget, override={}):
         raise KeyError(f'Parameter widget=`{widget}` must be None or key of self.theme '
                 'except `app` or `defaults`.')
     main = f'{class_name} {{{get_css(self, style)}}}'
-    if 'hover' in style:
-        main += f''' {class_name}:hover {{{get_css(self, style['hover'])}}}'''
-    if 'focus' in style:
-        main += f''' {class_name}:focus {{{get_css(self, style['focus'])}}}'''
+    for k, v in style.items():
+        if k.startswith(':'):
+            main += f''' {class_name}{k} {{{get_css(self, v)}}}'''
     return main
 
 def theme_font(self, key, font_spec:tuple=()):

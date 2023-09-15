@@ -1,15 +1,17 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QSizePolicy, QLineEdit, QFrame, QListWidget
+from PyQt6.QtWidgets import QApplication, QWidget, QLineEdit, QFrame, QListWidget, QTabWidget
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QAbstractItemView
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QFont, QFontDatabase
 from PyQt6.QtCore import Qt, QRect, QSize
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtSvg import QSvgRenderer
 from src.ui.widgets import BannerLabel, WidgetBuilder, FlipButton
-from src.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP
+from src.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
+from src.data import DataWrapper
+from src.ui.plot import PlotWrapper
 import os
 import copy
 
-class OscrGui(WidgetBuilder):
+class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
     from src.ui.styles import get_style, get_css, get_style_class, create_style_sheet
     from src.io import get_asset_path, browse_path
@@ -72,6 +74,8 @@ class OscrGui(WidgetBuilder):
 
         main_frame.setLayout(content_layout)
         self.setup_left_sidebar(left)
+        self.setup_main_tabber(center)
+        self.setup_overview_frame()
 
     def setup_left_sidebar(self, frame:QFrame):
         left_layout = QVBoxLayout()
@@ -83,22 +87,25 @@ class OscrGui(WidgetBuilder):
         head = self.create_label('STO Combatlog:', 'label', frame)
         left_layout.addWidget(head, alignment=ALEFT)
 
-        entry = QLineEdit(self.settings['base_path'], frame)
-        entry.setFixedWidth(self.settings['sidebar_item_width'])
-        entry.setStyleSheet(self.get_style_class('QLineEdit', 'entry'))
-        entry.setSizePolicy(SMAXMAX)
-        left_layout.addWidget(entry)
+        self.entry = QLineEdit(self.settings['base_path'], frame)
+        self.entry.setFixedWidth(self.settings['sidebar_item_width'])
+        self.entry.setStyleSheet(self.get_style_class('QLineEdit', 'entry'))
+        self.entry.setSizePolicy(SMAXMAX)
+        left_layout.addWidget(self.entry)
         
         button_frame = self.create_frame(frame, 'medium_frame')
         button_frame.setSizePolicy(SMINMAX)
         entry_button_config = {
             'default': {'margin-bottom': 15},
-            'Browse ...': {'callback': lambda: self.browse_log(entry), 'align': ALEFT},
-            'Analyze': {'callback': lambda: print('analyze'), 'align': ARIGHT}
+            'Browse ...': {'callback': lambda: self.browse_log(self.entry), 'align': ALEFT},
+            'Analyze': {'callback': lambda: self.analyze_log_callback(path=self.entry.text()), 'align': ARIGHT}
         }
         entry_buttons = self.create_button_series(button_frame, entry_button_config, 'button')
         button_frame.setLayout(entry_buttons)
         left_layout.addWidget(button_frame)
+
+        gear_button = self.create_icon_button(self.icons['gear'], 'icon_button', frame)
+        left_layout.addWidget(gear_button, alignment=ARIGHT)
 
         background_frame = self.create_frame(frame, 'light_frame', {'border-radius': 2})
         background_frame.setSizePolicy(SMAXMIN)
@@ -108,14 +115,82 @@ class OscrGui(WidgetBuilder):
         self.current_combats = QListWidget(background_frame)
         self.current_combats.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
         self.current_combats.setFont(self.theme_font('listbox'))
-        self.current_combats.insertItems(0, ['Infected Space (Elite) Combat ddddddxxxxddddddddddddddxxxxdddddd']*25)
         self.current_combats.setSizePolicy(SMAXMIN)
         self.current_combats.setFixedWidth(self.settings['sidebar_item_width'])
         background_layout.addWidget(self.current_combats)
         left_layout.addWidget(background_frame, stretch=1)
+        
+        gear_button.clicked.connect(lambda: self.analyze_log_callback(self.current_combats.currentRow()))
 
         frame.setLayout(left_layout)
 
+    def setup_main_tabber(self, frame:QFrame):
+        """
+        Sets up the tabber switching between Overview, Analysis, League and Settings
+        """
+        o_frame = self.create_frame(None, 'frame')
+        a_frame = self.create_frame(None, 'frame', {'background': 'blue'})
+        l_frame = self.create_frame(None, 'frame', {'background': 'pink'})
+        s_frame = self.create_frame(None, 'frame', {'background': 'brown'})
+        main_tabber = QTabWidget(frame)
+        main_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
+        main_tabber.tabBar().setStyleSheet(self.get_style_class('QTabBar', 'tabber_tab'))
+        main_tabber.setSizePolicy(SMINMIN)
+        main_tabber.addTab(o_frame, 'O')
+        main_tabber.addTab(a_frame, 'A')
+        main_tabber.addTab(l_frame, 'L')
+        main_tabber.addTab(s_frame, 'S')
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(main_tabber)
+        frame.setLayout(layout)
+        self.widgets['main_menu_buttons'][0].clicked.connect(lambda: main_tabber.setCurrentIndex(0))
+        self.widgets['main_menu_buttons'][1].clicked.connect(lambda: main_tabber.setCurrentIndex(1))
+        self.widgets['main_menu_buttons'][2].clicked.connect(lambda: main_tabber.setCurrentIndex(2))
+        self.widgets['main_menu_buttons'][3].clicked.connect(lambda: main_tabber.setCurrentIndex(3))
+        self.widgets['main_tab_frames'].append(o_frame)
+        self.widgets['main_tab_frames'].append(a_frame)
+        self.widgets['main_tab_frames'].append(l_frame)
+        self.widgets['main_tab_frames'].append(s_frame)
+
+    def setup_overview_frame(self):
+        """
+        Sets up the frame housing the combatlog overview
+        """
+        o_frame = self.widgets['main_tab_frames'][0]
+        bar_frame = self.create_frame(None, 'frame')
+        dps_graph_frame = self.create_frame(None, 'frame')
+        dmg_graph_frame = self.create_frame(None, 'frame')
+        self.widgets['overview_tab_frames'].append(bar_frame)
+        self.widgets['overview_tab_frames'].append(dps_graph_frame)
+        self.widgets['overview_tab_frames'].append(dmg_graph_frame)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        switch_frame = self.create_frame(o_frame, 'frame')
+        layout.addWidget(switch_frame, alignment=ACENTER)
+
+        o_tabber = QTabWidget(o_frame)
+        o_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
+        o_tabber.tabBar().setStyleSheet(self.get_style_class('QTabBar', 'tabber_tab'))
+        o_tabber.addTab(bar_frame, 'BAR')
+        o_tabber.addTab(dps_graph_frame, 'DPS')
+        o_tabber.addTab(dmg_graph_frame, 'DMG')
+        layout.addWidget(o_tabber)
+
+        switch_style = {
+            'default': {'margin-left': '@margin', 'margin-right': '@margin'},
+            'DPS Bar': {'callback': lambda: o_tabber.setCurrentIndex(0), 'align':ACENTER},
+            'DPS Graph': {'callback': lambda: o_tabber.setCurrentIndex(1), 'align':ACENTER},
+            'Damage Graph': {'callback': lambda: o_tabber.setCurrentIndex(2), 'align':ACENTER}
+        }
+        switches = self.create_button_series(switch_frame, switch_style, 'button')
+        switch_frame.setLayout(switches)
+
+        #table
+
+        o_frame.setLayout(layout)
 
 
     def create_master_layout(self, parent):
@@ -137,7 +212,7 @@ class OscrGui(WidgetBuilder):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         lbl = BannerLabel(self.get_asset_path('oscrbanner-slim-dark-label.png'), bg_frame)
-        
+
         main_layout.addWidget(lbl)
 
         menu_frame = self.create_frame(bg_frame, 'frame', {'background':'#c82934'})
@@ -145,13 +220,15 @@ class OscrGui(WidgetBuilder):
         menu_frame.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(menu_frame)
         menu_button_style = {
-            'Overview': {'callback':lambda: print('Overview Button Pressed'), 'style':{'margin-left':15}},
-            'Analysis': {'callback':lambda: print('Analysis Button Pressed')},
-            'League Standings': {'callback':lambda: print('League Button Pressed')},
-            'Settings': {'callback':lambda: print('Settings Button Pressed')},
+            'Overview': {'style':{'margin-left':15}},
+            'Analysis': {},
+            'League Standings': {},
+            'Settings': {},
         }
-        buttons = self.create_button_series(menu_frame, menu_button_style, 'menu_button', seperator='•')
-        menu_frame.setLayout(buttons)
+        bt_lay, buttons = self.create_button_series(menu_frame, menu_button_style, 
+                style='menu_button', seperator='•', ret=True)
+        menu_frame.setLayout(bt_lay)
+        self.widgets['main_menu_buttons'] = buttons
 
         main_frame = self.create_frame(bg_frame, 'frame', {'margin':'0px 8px 8px 8px'})
         main_frame.setSizePolicy(SMINMIN)
@@ -189,3 +266,23 @@ class OscrGui(WidgetBuilder):
             path = self.browse_path(os.path.dirname(current_path), 'Logfile (*.log);;Any File (*.*)')
             if path != '':
                 entry.setText(path)
+
+    def analyze_log_callback(self, combat_id=None, path=None):
+        """wrapper function for retrieving and showing data"""
+        # initial run / click on the Analyze button
+        if combat_id is None:
+            if not path or not os.path.isfile(path):
+                self.show_warning('Invalid Logfile', 'The Logfile you are trying to open does not exist.')
+                return
+            combats = self.get_data(combat=None, path=path)
+            self.current_combats.clear()
+            self.current_combats.addItems(combats)
+            self.current_combats.setCurrentRow(0)
+            self.current_combat_id = 0
+            
+            self.create_overview()
+        # subsequent run / click on older combat
+        elif isinstance(combat_id, int) and combat_id != self.current_combat_id: 
+            self.get_data(combat_id)
+            self.create_overview()
+            self.current_combat_id = combat_id
