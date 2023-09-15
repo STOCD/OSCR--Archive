@@ -548,6 +548,7 @@ class parser:
     def combatLogAnalysis(self):
         firstLine = True
         for x in self.combatlog:
+            print(x)
             final = []
             splicer1 = x.split("::")
             final.append(splicer1[0])
@@ -885,7 +886,10 @@ class parser:
                     if id.name == playerID:
                         attacker = id
                 if attacker == None:
-                    self.tableArray.append(players(playerID, False, self.timeToTimeAndDate(x[self.combatlogDict["date"]])))
+                    wcb_attacker = players(playerID, False, self.timeToTimeAndDate(x[self.combatlogDict["date"]]))
+                    self.tableArray.append(wcb_attacker)
+                    attacker = wcb_attacker
+
                     
 
                 #Do something for WCB damage tracking
