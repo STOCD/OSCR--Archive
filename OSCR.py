@@ -548,7 +548,6 @@ class parser:
     def combatLogAnalysis(self):
         firstLine = True
         for x in self.combatlog:
-            print(x)
             final = []
             splicer1 = x.split("::")
             final.append(splicer1[0])
