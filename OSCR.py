@@ -1973,11 +1973,24 @@ class parser:
             self.combatlog.append(line)
         self.combatLogAnalysis()
 
+    def readCombatFromTempfile(self, otherCombat):
+        self.softResetParser()
+        file = otherCombat[0]
+        file.seek(0)
+        lines = file.readlines()
+        for line in lines:
+            self.combatlog.append(line)
+        self.combatLogAnalysis()
+
     def generatedUItables(self):
         for entity in self.tableArray:
             input = [entity.isPlayer, entity.dmgoutTable, entity.petDMGTable, entity.dmginTable, entity.healsOutTable,
                      entity.petHealsTable, entity.healsInTable]
             self.uiDictionary.update({entity.name: input})
+
+    def returnUItables(self):
+        self.generatedUItables()
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart, self.NPCDamageChart, self.NPCDPSChart
 
     def readCombatwithUITables(self, path):
         self.setPath(path)
@@ -1989,6 +2002,13 @@ class parser:
         self.readPreviousCombat(combatID)
         self.generatedUItables()
         return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart, self.NPCDamageChart, self.NPCDPSChart
+
+    def readTempFileCombatwithUITables(self, otherCombat):
+        self.readCombatFromTempfile(otherCombat)
+        self.generatedUItables()
+        return self.uiDictionary, self.dmgTableIndex, self.healTableIndex, self.uiInputDictionary, self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart, self.NPCDamageChart, self.NPCDPSChart
+
+
 
     def realTimeParser(self):
         startline = None
@@ -2277,19 +2297,32 @@ class parser:
 
 
 def main():
-    path = "ISA_Array_OOB.log"
+    path = "multiplelogtest.txt"
     parserInstance = parser()
     parserInstance.setPath(path)
     # parserInstance.realTimeParser()
     parserInstance.readCombat()
     parserInstance.generalStatsCopy()
     table = parserInstance.createFrontPageTable()
+    print(parserInstance.otherCombats)
     for player in parserInstance.tableArray:
         if player.isPlayer:
             graph = parserInstance.getStatsCopy("ATKS-in", player.name)
             print(graph)
     for row in table:
         print(row)
+    parser2 = parser()
+    parser2.readCombatFromTempfile(parserInstance.otherCombats[0])
+
+
+    for player in parser2.tableArray:
+        if player.isPlayer:
+            graph = parser2.getStatsCopy("ATKS-in", player.name)
+            print(graph)
+    for row in table:
+        print(row)
+
+
 
 
 if __name__ == '__main__':
