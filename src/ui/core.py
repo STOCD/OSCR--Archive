@@ -251,10 +251,10 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         rel_size_x, rel_size_y = size
         rect = app.primaryScreen().availableGeometry()
         _, _, width, height = rect.getRect()
-        pos_x = rel_x * width
-        pos_y = rel_y * height
-        width = rel_size_x * width
-        height = rel_size_y * height
+        pos_x = int(rel_x * width)
+        pos_y = int(rel_y * height)
+        width = int(rel_size_x * width)
+        height = int(rel_size_y * height)
         return (pos_x, pos_y, width, height)
 
     def browse_log(self, entry:QLineEdit):
