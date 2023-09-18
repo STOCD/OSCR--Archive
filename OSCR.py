@@ -1059,7 +1059,6 @@ class parser:
 
 
                 elif x[self.combatlogDict["source"]] == "Warp Core Breach":
-
                     if not "WarpCoreBreach" in self.playerdict:
                         self.tableArray.append(players("WarpCoreBreach", False, self.timeToTimeAndDate(x[self.combatlogDict["date"]])))
                         self.playerdict.update({"WarpCoreBreach": self.counter2})
@@ -1074,7 +1073,7 @@ class parser:
                     player = attacker.name
                     if damage1 < 0:
                         damage1 *= -1
-                    sourceID = x[self.combatlogDict["targetID"]]
+                    sourceID = x[self.combatlogDict["ID"]] + "_WCB"
                     weapon = "Warp Core Breach"
                     target = x[self.combatlogDict["targetID"]]
                     source = "Pets (sum)"
@@ -1113,6 +1112,506 @@ class parser:
                         shielddamage = damage1
                     else:
                         hulldamage = damage1
+
+                    if source in attacker.dmgoutDict:
+                        newTarget = True
+                        for col in attacker.dmgoutTable[attacker.dmgoutDict[source]]:
+                            if col[attacker.dmgoutindex["target"]] == target:
+                                newTarget = False
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["damage"]] += damage1
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["hulldamage"]] += hulldamage
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not source in self.excludeAttacks:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["attacks"]] += 1
+                                    col[attacker.dmgoutindex["attacks"]] += 1
+                                col[attacker.dmgoutindex["damage"]] += damage1
+                                col[attacker.dmgoutindex["hulldamage"]] += hulldamage
+                                col[attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["hullAttacks"]] += 1
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["resist"]] += resist
+                                    col[attacker.dmgoutindex["resist"]] += resist
+                                if damage1 > attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["maxHit"]]:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["maxHit"]] = damage1
+                                if damage1 > col[attacker.dmgoutindex["maxHit"]]:
+                                    col[attacker.dmgoutindex["maxHit"]] = damage1
+                                if isMiss:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["misses"]] += 1
+                                    col[attacker.dmgoutindex["misses"]] += 1
+                                if isCrit:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["crits"]] += 1
+                                    col[attacker.dmgoutindex["crits"]] += 1
+                                if isFlank:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["flanks"]] += 1
+                                    col[attacker.dmgoutindex["flanks"]] += 1
+                                if isKill:
+                                    attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                        attacker.dmgoutindex["kills"]] += 1
+                                    col[attacker.dmgoutindex["kills"]] += 1
+                        if newTarget:
+                            attacker.dmgoutTable[attacker.dmgoutDict[source]].append(
+                                [source, target, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0),
+                                 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                                 (0 if damagetype == "Shield" else resist), 1, 0])
+                            attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                attacker.dmgoutindex["damage"]] += damage1
+                            attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                attacker.dmgoutindex["hulldamage"]] += hulldamage
+                            attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
+                            if not source in self.excludeAttacks:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["attacks"]] += 1
+                            if damage1 > attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                attacker.dmgoutindex["maxHit"]]:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["maxHit"]] = damage1
+                            if isMiss:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["misses"]] += 1
+                            if isCrit:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["crits"]] += 1
+                            if isFlank:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["flanks"]] += 1
+                            if isKill:
+                                attacker.dmgoutTable[attacker.dmgoutDict[source]][0][
+                                    attacker.dmgoutindex["kills"]] += 1
+                    else:
+                        attacker.dmgoutTable.append([
+                            [source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                             (0 if damagetype == "Shield" else resist), 1, 0],
+                            [source, target, damage1, 0, damage1, (1 if isCrit else 0),
+                             (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0),
+                             hulldamage, shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
+                        attacker.dmgoutDict.update({source: len(attacker.dmgoutTable) - 1})
+
+                    source = "Warp Core Breach"
+                    weaponID = player + source + sourceID + weapon
+                    targetID = player + source + sourceID + weapon + target
+                    if not source in self.excludeAttacks:
+                        attacker.totalAttacks += 1
+
+                    dmgOutSource = x[self.combatlogDict["ID"]]
+                    if dmgOutSource in damaged.dmginTable:
+                        newTargeted = True
+                        for col in damaged.dmginTable[damaged.dmgInDict[dmgOutSource]]:
+                            if col[damaged.dmgoutindex["target"]] == source:
+                                newTargeted = False
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["damage"]] += damage1
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["hulldamage"]] += hulldamage
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not dmgOutSource in self.excludeAttacks:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["attacks"]] += 1
+                                    col[attacker.dmgoutindex["attacks"]] += 1
+                                col[attacker.dmgoutindex["damage"]] += damage1
+                                col[attacker.dmgoutindex["hulldamage"]] += hulldamage
+                                col[attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["hullAttacks"]] += 1
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["resist"]] += resist
+                                    col[attacker.dmgoutindex["resist"]] += resist
+                                if damage1 > damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["maxHit"]]:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["maxHit"]] = damage1
+                                if damage1 > col[attacker.dmgoutindex["maxHit"]]:
+                                    col[attacker.dmgoutindex["maxHit"]] = damage1
+
+                                if isMiss:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["misses"]] += 1
+                                    col[attacker.dmgoutindex["misses"]] += 1
+                                if isCrit:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["crits"]] += 1
+                                    col[attacker.dmgoutindex["crits"]] += 1
+                                if isFlank:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["flanks"]] += 1
+                                    col[attacker.dmgoutindex["flanks"]] += 1
+                                if isKill:
+                                    damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                        attacker.dmgoutindex["kills"]] += 1
+                                    col[attacker.dmgoutindex["kills"]] += 1
+                        if newTargeted:
+                            damaged.dmginTable[damaged.dmgInDict[dmgOutSource]].append(
+                                [dmgOutSource, source, damage1, 0, damage1, (1 if isCrit else 0),
+                                 (1 if isFlank else 0),
+                                 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                                 (0 if damagetype == "Shield" else resist), 1, 0])
+                            damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                attacker.dmgoutindex["damage"]] += damage1
+                            damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                attacker.dmgoutindex["hulldamage"]] += hulldamage
+                            damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
+                            if not dmgOutSource in self.excludeAttacks:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["attacks"]] += 1
+                            if damage1 > damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                attacker.dmgoutindex["maxHit"]]:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["maxHit"]] = damage1
+                            if isMiss:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["misses"]] += 1
+                            if isCrit:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["crits"]] += 1
+                            if isFlank:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["flanks"]] += 1
+                            if isKill:
+                                damaged.dmginTable[damaged.dmgInDict[dmgOutSource]][0][
+                                    attacker.dmgoutindex["kills"]] += 1
+
+                    else:
+                        damaged.dmginTable.append([
+                            [source, "global", damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                             (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                             (0 if damagetype == "Shield" else resist), 1, 0],
+                            [source, target, damage1, 0, damage1, (1 if isCrit else 0),
+                             (1 if isFlank else 0), 1, (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0),
+                             hulldamage,
+                             shielddamage, (0 if damagetype == "Shield" else resist), 1, 0]])
+                        damaged.dmgInDict.update({dmgOutSource: len(attacker.dmgoutTable) - 1})
+
+                    tempTargetID = target.split("[")[1]
+                    tempTargetID = tempTargetID.split(" ")[0]
+                    displayTarget = x[self.combatlogDict["target"]] + " " + tempTargetID
+                    tempdisplaySourceID = sourceID.split("[")[1]
+                    tempdisplaySourceID = tempdisplaySourceID.split(" ")[0]
+                    displaySourceID = source + " " + tempdisplaySourceID
+
+                    # check if pet type already exists
+                    if source in attacker.petSourceDict:
+                        # update damage of existing pet type
+                        attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                            attacker.dmgoutindex["damage"]] += damage1
+                        attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                            attacker.dmgoutindex["hulldamage"]] += hulldamage
+                        attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                            attacker.dmgoutindex["shielddamage"]] += shielddamage
+                        if not damagetype == "Shield" and not isMiss and not resist == 0:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["hullAttacks"]] += 1
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["resist"]] += resist
+                        if not weapon in self.excludeAttacks:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["attacks"]] += 1
+                        if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                            attacker.dmgoutindex["maxHit"]]:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["maxHit"]] = damage1
+                        if isMiss:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["misses"]] += 1
+                        if isCrit:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["crits"]] += 1
+                        if isFlank:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["flanks"]] += 1
+                        if isKill:
+                            attacker.petDMGTable[attacker.petSourceDict[source]][0][
+                                attacker.dmgoutindex["kills"]] += 1
+
+                        # check if pet instance exists
+                        if sourceID in attacker.petSourceIDDict:
+                            # updateing stats of pet instance
+                            attacker.petDMGTable[attacker.petSourceDict[source]][
+                                attacker.petSourceIDDict[sourceID]][0][
+                                attacker.dmgoutindex["damage"]] += damage1
+                            attacker.petDMGTable[attacker.petSourceDict[source]][
+                                attacker.petSourceIDDict[sourceID]][0][
+                                attacker.dmgoutindex["hulldamage"]] += hulldamage
+                            attacker.petDMGTable[attacker.petSourceDict[source]][
+                                attacker.petSourceIDDict[sourceID]][0][
+                                attacker.dmgoutindex["shielddamage"]] += shielddamage
+                            if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["hullAttacks"]] += 1
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["resist"]] += resist
+                            if not weapon in self.excludeAttacks:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["attacks"]] += 1
+                            if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][
+                                attacker.petSourceIDDict[sourceID]][0][
+                                attacker.dmgoutindex["maxHit"]]:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["maxHit"]] = damage1
+                            if isMiss:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["misses"]] += 1
+                            if isCrit:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["crits"]] += 1
+                            if isFlank:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["flanks"]] += 1
+                            if isKill:
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][0][
+                                    attacker.dmgoutindex["kills"]] += 1
+                            # check if weapon for pet exists
+                            if weaponID in attacker.petWeaponDict:
+                                # update stats
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                    attacker.dmgoutindex["damage"]] += damage1
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                    attacker.dmgoutindex["hulldamage"]] += hulldamage
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                    attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["hullAttacks"]] += 1
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["resist"]] += resist
+                                if not weapon in self.excludeAttacks:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["attacks"]] += 1
+                                if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                    attacker.dmgoutindex["maxHit"]]:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["maxHit"]] = damage1
+                                if isMiss:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["misses"]] += 1
+                                if isCrit:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["crits"]] += 1
+                                if isFlank:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["flanks"]] += 1
+                                if isKill:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][0][
+                                        attacker.dmgoutindex["kills"]] += 1
+
+                                if targetID in attacker.petTargetDict:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                        attacker.petTargetDict[targetID]][
+                                        attacker.dmgoutindex["hulldamage"]] += hulldamage
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                        attacker.petTargetDict[targetID]][attacker.dmgoutindex["damage"]] += damage1
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                        attacker.petTargetDict[targetID]][
+                                        attacker.dmgoutindex["shielddamage"]] += shielddamage
+                                    if not damagetype == "Shield" and not isMiss and not resist == 0:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][
+                                            attacker.dmgoutindex["hullAttacks"]] += 1
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][
+                                            attacker.dmgoutindex["resist"]] += resist
+                                    if not weapon in self.excludeAttacks:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][attacker.dmgoutindex["attacks"]] += 1
+                                    if damage1 > attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                        attacker.petTargetDict[targetID]][attacker.dmgoutindex["maxHit"]]:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][
+                                            attacker.dmgoutindex["maxHit"]] = damage1
+                                    if isMiss:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][attacker.dmgoutindex["misses"]] += 1
+                                    if isCrit:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][attacker.dmgoutindex["crits"]] += 1
+                                    if isFlank:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][attacker.dmgoutindex["flanks"]] += 1
+                                    if isKill:
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]][
+                                            attacker.petTargetDict[targetID]][attacker.dmgoutindex["kills"]] += 1
+
+                                else:
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][
+                                        attacker.petWeaponDict[weaponID]].append(
+                                        [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0),
+                                         (1 if isFlank else 0), 1,
+                                         (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage,
+                                         shielddamage, (0 if damagetype == "Shield" else resist), 1, 0])
+                                    attacker.petTargetDict.update({targetID: len(
+                                        attacker.petDMGTable[attacker.petSourceDict[source]][
+                                            attacker.petSourceIDDict[sourceID]][
+                                            attacker.petWeaponDict[weaponID]]) - 1})
+
+                            else:
+                                # adding new weapon instance
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]].append([[weapon, weapon, damage1, 0,
+                                                                                 damage1, (1 if isCrit else 0),
+                                                                                 (1 if isFlank else 0), 1,
+                                                                                 (1 if isMiss else 0), 0, 0, 0,
+                                                                                 (1 if isKill else 0), hulldamage,
+                                                                                 shielddamage, (
+                                                                                     0 if damagetype == "Shield" else resist),
+                                                                                 1, 0],
+                                                                                [target, displayTarget, damage1, 0,
+                                                                                 damage1, (1 if isCrit else 0),
+                                                                                 (1 if isFlank else 0), 1,
+                                                                                 (1 if isMiss else 0), 0, 0, 0,
+                                                                                 (1 if isKill else 0), hulldamage,
+                                                                                 shielddamage, (
+                                                                                     0 if damagetype == "Shield" else resist),
+                                                                                 1, 0]])
+                                attacker.petWeaponDict.update({weaponID: len(
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]]) - 1})
+                                attacker.petTargetDict.update({targetID: len(
+                                    attacker.petDMGTable[attacker.petSourceDict[source]][
+                                        attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]]) - 1})
+
+
+                        else:
+                            # adding a new unique pet to a type of pet
+                            attacker.petDMGTable[attacker.petSourceDict[source]].append([[sourceID, displaySourceID,
+                                                                                          damage1, 0, damage1,
+                                                                                          (1 if isCrit else 0),
+                                                                                          (1 if isFlank else 0), 1,
+                                                                                          (1 if isMiss else 0), 0,
+                                                                                          0, 0,
+                                                                                          (1 if isKill else 0),
+                                                                                          hulldamage, shielddamage,
+                                                                                          (
+                                                                                              0 if damagetype == "Shield" else resist),
+                                                                                          1, 0], [[weapon, weapon,
+                                                                                                   damage1, 0,
+                                                                                                   damage1, (
+                                                                                                       1 if isCrit else 0),
+                                                                                                   (
+                                                                                                       1 if isFlank else 0),
+                                                                                                   1,
+                                                                                                   (
+                                                                                                       1 if isMiss else 0),
+                                                                                                   0, 0, 0, (
+                                                                                                       1 if isKill else 0),
+                                                                                                   hulldamage,
+                                                                                                   shielddamage, (
+                                                                                                       0 if damagetype == "Shield" else resist),
+                                                                                                   1, 0], [target,
+                                                                                                           displayTarget,
+                                                                                                           damage1,
+                                                                                                           0,
+                                                                                                           damage1,
+                                                                                                           (
+                                                                                                               1 if isCrit else 0),
+                                                                                                           (
+                                                                                                               1 if isFlank else 0),
+                                                                                                           1,
+                                                                                                           (
+                                                                                                               1 if isMiss else 0),
+                                                                                                           0, 0, 0,
+                                                                                                           (
+                                                                                                               1 if isKill else 0),
+                                                                                                           hulldamage,
+                                                                                                           shielddamage,
+                                                                                                           (
+                                                                                                               0 if damagetype == "Shield" else resist),
+                                                                                                           1, 0]]])
+                            attacker.petSourceIDDict.update(
+                                {sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]]) - 1})
+                            attacker.petWeaponDict.update({weaponID: len(
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]]) - 1})
+                            attacker.petTargetDict.update({targetID: len(
+                                attacker.petDMGTable[attacker.petSourceDict[source]][
+                                    attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]]) - 1})
+
+                    else:
+                        # adding a new pet type
+                        attacker.petDMGTable.append(
+                            [[source, source, damage1, 0, damage1, (1 if isCrit else 0), (1 if isFlank else 0), 1,
+                              (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                              (0 if damagetype == "Shield" else resist), 1, 0], [
+                                 [sourceID, displaySourceID, damage1, 0, damage1, (1 if isCrit else 0),
+                                  (1 if isFlank else 0), 1,
+                                  (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                                  (0 if damagetype == "Shield" else resist), 1, 0], [
+                                    [weapon, weapon, damage1, 0, damage1, (1 if isCrit else 0),
+                                     (1 if isFlank else 0), 1,
+                                     (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                                     (0 if damagetype == "Shield" else resist), 1, 0],
+                                    [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0),
+                                     (1 if isFlank else 0), 1,
+                                     (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
+                                     (0 if damagetype == "Shield" else resist), 1, 0]]]])
+                        attacker.petSourceDict.update({source: len(attacker.petDMGTable) - 1})
+                        attacker.petSourceIDDict.update(
+                            {sourceID: len(attacker.petDMGTable[attacker.petSourceDict[source]]) - 1})
+                        attacker.petWeaponDict.update({weaponID: len(
+                            attacker.petDMGTable[attacker.petSourceDict[source]][
+                                attacker.petSourceIDDict[sourceID]]) - 1})
+                        attacker.petTargetDict.update({targetID: len(
+                            attacker.petDMGTable[attacker.petSourceDict[source]][
+                                attacker.petSourceIDDict[sourceID]][attacker.petWeaponDict[weaponID]]) - 1})
+
+
+
 
 
 
@@ -1888,7 +2387,7 @@ class parser:
                                              [weapon, weapon, damage1, 0, damage1, (1 if isCrit else 0),
                                               (1 if isFlank else 0), 1,
                                               (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
-                                              (0 if damagetype == "Shield" else resist), 1, 0],
+                                              (0 if damagetype == "Shield" else resist),1, 0],
                                              [target, displayTarget, damage1, 0, damage1, (1 if isCrit else 0),
                                               (1 if isFlank else 0), 1,
                                               (1 if isMiss else 0), 0, 0, 0, (1 if isKill else 0), hulldamage, shielddamage,
