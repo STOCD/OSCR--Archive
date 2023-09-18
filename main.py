@@ -31,13 +31,15 @@ class Launcher():
                     'background': 'none'
                 },
                 'QScrollBar::handle': {
-                    'background': 'red',
-                    'background-color': '#101010',
+                    'background-color': 'rgba(0,0,0,.75)',
                     'border-radius': 5,
                     'border': 'none'
                 },
                 'QScrollBar::add-line, QScrollBar::sub-line': {
                     'height': 0
+                },
+                'QTableCornerButton::section': {
+                    'background': '#1a1a1a'
                 }
             }
         },
@@ -176,6 +178,87 @@ class Launcher():
                 'height': 0,
                 'width': 0
             }
+        },
+        'table': {
+            'color': '@fg',
+            'background': '@bg',
+            'border': '1px solid #888888',
+            'gridline-color': 'rgba(0,0,0,0)',
+            'outline': '0',
+            'margin': (0, 10, 10, 0),
+            'font': ('Roboto Mono', 15, 'Medium'),
+            '::item': {
+                'padding': (0, 5, 0, 5),
+                'border': '1px solid #1a1a1a',
+                'border-right': '1px solid #888888'
+            },
+            '::item:alternate': {
+                'padding': (0, 5, 0, 5),
+                'border': '1px solid #242424',
+                'background': '#242424',
+                'border-right': '1px solid #888888'
+            },
+            '::item:hover': {
+                'background': '#20c82934',
+                'padding': (0, 5, 0, 5)
+            },
+            '::item:focus': {
+                'background': '@bg',#'#20242424',
+                'color': '@fg',
+                'font-weight': '900',
+            },
+            '::item:selected': {
+                'background': '@bg',
+                'color': '@fg',
+                'border': '1px solid #c82934',
+            },
+            '::item:alternate:focus': {
+                'background': '#242424'
+            },
+            '::item:alternate:selected': {
+                'background': '#242424'
+            }
+        },
+        'table_header': {
+            'color': '@bg',
+            'background': '@mbg',
+            'border': 'none',
+            'border-bottom': '2px solid #888888',
+            'outline': '0',
+            'font': ('Overpass', 15, 'Medium'),
+            '::section': {
+                'background': '@mbg',
+                'color': '@fg',
+                'padding': (0, -8, -3, 6),
+                'border': 'none',
+                'margin': 0
+            },
+            '::section:hover': {
+                'background': '#20c82934'
+            },
+            '::up-arrow': {
+                'color': '#888888'
+            },
+            '::down-arrow': {
+                'color': '#888888'
+            }
+        },
+        'table_index': {
+            'color': '@bg',
+            'background': '@mbg',
+            'border': 'none',
+            'border-right': '2px solid #888888',
+            'outline': '0',
+            '::section': {
+                'background': '@mbg',
+                'color': '@fg',
+                'padding': (0, 3, 0, 3),
+                'border': 'none',
+                'margin': 0
+            },
+            '::section:hover': {
+                'background': '#20c82934'
+            },
         },
         's.c': {
             'button_icon_size': 24

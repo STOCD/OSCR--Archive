@@ -2,12 +2,16 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import Axes
 from matplotlib.container import BarContainer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from PyQt6.QtWidgets import QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QVBoxLayout, QWidget, QTableView, QAbstractItemView, QHeaderView
+from PyQt6.QtCore import QSortFilterProxyModel
 import numpy as np
-import pandas as pd
+from src.data import TableModel, SortingProxy
+from src.ui.widgets import SMINMIN, ACENTER
 
 
 class PlotWrapper():
+
+    from src.ui.styles import theme_font, get_style_class
 
     def __init__(self) -> None:
         """
@@ -27,6 +31,11 @@ class PlotWrapper():
             if frame.layout():
                 QWidget().setLayout(frame.layout())
 
+        # close graphs
+        for figure in self.widgets['overview_graphs']:
+            plt.close(figure)
+        self.widgets['overview_graphs'] = []
+
         # DPS Bar Graph
         dps = self.get_overview_dps()
         players = self.overview_data[2]
@@ -42,10 +51,11 @@ class PlotWrapper():
             for i, bar in enumerate(bars):
                 self.create_bar_label(bar, a, dps, dps[i], lbs[i], i)"""
             #f.set_figwidth(int(self.windowWidth*0.075))
+        self.widgets['overview_graphs'].append(f)
         chart = FigureCanvasQTAgg(f)
         l = QVBoxLayout()
         l.setContentsMargins(0, 0, 0, 0)
-        l.addWidget(chart)
+        l.addWidget(chart, stretch=11)
         self.widgets['overview_tab_frames'][0].setLayout(l)
 
         # DPS Graph
@@ -55,6 +65,7 @@ class PlotWrapper():
                 a.plot(np.divide(array[0], 1000), array[1], 
                         label=self.clean_player_id(player))
             a.legend()
+        self.widgets['overview_graphs'].append(f)
         chart2 = FigureCanvasQTAgg(f)
         l2 = QVBoxLayout()
         l2.setContentsMargins(0, 0, 0, 0)
@@ -73,12 +84,16 @@ class PlotWrapper():
                         label=self.clean_player_id(player), width=0.1)"""
             #a.legend()
             #f.set_figwidth(int(self.windowWidth*0.075))
+        self.widgets['overview_graphs'].append(f)
         chart3 = FigureCanvasQTAgg(f)
         l3 = QVBoxLayout()
         l3.setContentsMargins(0, 0, 0, 0)
         l3.addWidget(chart3)
         self.widgets['overview_tab_frames'][2].setLayout(l3)
         # Overview Table
+
+        tbl = self.create_overview_table()
+        l.addWidget(tbl, stretch=4)
         """self.format_table(self.overview_data[0])
 
         overview_table = self.create_table(self.overview_table_frame, 
@@ -157,3 +172,29 @@ class PlotWrapper():
             x = np.divide(ar[0], 1000) + off
             a.bar(x, ar[1], label=self.clean_player_id(player), width=wd)
         return f, a
+
+    def create_overview_table(self):
+        """
+        Creates the overview table
+        """
+        model = TableModel(*self.overview_data, 
+                header_font=self.theme_font('table_header'), cell_font=self.theme_font('table'))
+        sort = SortingProxy()
+        sort.setSourceModel(model)
+        table = QTableView(self.widgets['overview_tab_frames'][0])
+        table.setAlternatingRowColors(True)
+        table.setShowGrid(False)
+        table.setSortingEnabled(True)
+        table.setModel(sort)
+        table.setStyleSheet(self.get_style_class('QTableView', 'table'))
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.horizontalHeader().setStyleSheet(self.get_style_class('QHeaderView', 'table_header'))
+        table.verticalHeader().setStyleSheet(self.get_style_class('QHeaderView', 'table_index'))
+        table.resizeColumnsToContents()
+        for col in range(len(model._header)):
+            table.horizontalHeader().resizeSection(col, table.horizontalHeader().sectionSize(col) + 5)
+        table.resizeRowsToContents()
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        table.setSizePolicy(SMINMIN)
+        return table

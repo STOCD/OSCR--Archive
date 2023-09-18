@@ -186,10 +186,8 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
             'Damage Graph': {'callback': lambda: o_tabber.setCurrentIndex(2), 'align':ACENTER}
         }
         switches = self.create_button_series(switch_frame, switch_style, 'button')
+        switches.setContentsMargins(0, self.theme['app']['margin'], 0, 0)
         switch_frame.setLayout(switches)
-
-        #table
-
         o_frame.setLayout(layout)
 
 
