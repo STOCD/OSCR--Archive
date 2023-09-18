@@ -1059,12 +1059,12 @@ class parser:
 
 
                 elif x[self.combatlogDict["source"]] == "Warp Core Breach":
-                    if not "WarpCoreBreach" in self.playerdict:
-                        self.tableArray.append(players("WarpCoreBreach", False, self.timeToTimeAndDate(x[self.combatlogDict["date"]])))
-                        self.playerdict.update({"WarpCoreBreach": self.counter2})
-                        self.counter2 += 1
-                    player = "WarpCoreBreach"
                     if self.WCBrule == "Global":
+                        if not "WarpCoreBreach" in self.playerdict:
+                            self.tableArray.append(
+                                players("WarpCoreBreach", False, self.timeToTimeAndDate(x[self.combatlogDict["date"]])))
+                            self.playerdict.update({"WarpCoreBreach": self.counter2})
+                            self.counter2 += 1
                         attacker = self.tableArray[self.playerdict["WarpCoreBreach"]]
                     elif self.WCBrule == "Personal":
                         attacker = self.tableArray[self.playerdict[x[self.combatlogDict["ID"]]]]
