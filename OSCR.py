@@ -34,6 +34,8 @@ class players:  # main container class, used for saving stats on all entities
         self.petHealsTable = []
         self.totaldamage = 0
         self.totalAttacks = 0
+        self.hulllDamage = 0
+        self.shieldDamage = 0
         self.totalHealInstances = 0
         self.totalCrits = 0
         self.totalHealCrits = 0
@@ -112,6 +114,8 @@ class players:  # main container class, used for saving stats on all entities
         self.combatTime = self.runtime
         if self.combatTime < 1:
             self.combatTime = 1
+        self.dmgoutTable[0] = [self.name, "global", self.totaldamage, 0, self.maxOneHit, self.totalCrits, self.flanks, self.totalAttacks, self.misses, 0, 0, 0, self.kills, self.hulllDamage, self.shieldDamage, self.resist, self.hullAttacks, 0   ]
+
         for rows in self.dmgoutTable:
             for col in rows:
                 self.tmpDamage = col[self.dmgoutindex["damage"]]
@@ -489,8 +493,8 @@ class parser:
     def createTableInstanceAlternate(self, isPlayer, ID, time):
         self.tableArray.append(players(ID, isPlayer, self.timeToTimeAndDate(time)))
         self.playerdict.update({ID: self.counter2})
+        self.tableArray[self.counter2].dmgOutTable.append([])
         self.counter2 += 1
-
 
     def createTableInstance(self, line):  # creates a new class instance and appends to list
         if line[self.combatlogDict["ID"]][0] == "P":
@@ -501,11 +505,11 @@ class parser:
         if player:
             self.tableArray.append(players(ID, True, self.timeToTimeAndDate(line[self.combatlogDict["date"]])))
             self.playerdict.update({ID: self.counter2})
-            self.counter2 += 1
         else:
             self.tableArray.append(players(ID, False, self.timeToTimeAndDate(line[self.combatlogDict["date"]])))
             self.playerdict.update({ID: self.counter2})
-            self.counter2 += 1
+        self.tableArray[self.counter2].dmgOutTable.append([])
+        self.counter2 += 1
 
     def getGlobalTime(self):
         self.globalCombatTime = (self.globalCombatEnd - self.globalCombatStart).total_seconds()
@@ -1112,6 +1116,8 @@ class parser:
                         shielddamage = damage1
                     else:
                         hulldamage = damage1
+                    attacker.hulllDamage += hulldamage
+                    attacker.shieldDamage += shielddamage
 
                     if source in attacker.dmgoutDict:
                         newTarget = True
@@ -1665,6 +1671,9 @@ class parser:
                                 shielddamage = damage1
                             else:
                                 hulldamage = damage1
+                            attacker.hulllDamage += hulldamage
+                            attacker.shieldDamage += shielddamage
+
                             # DMGout updater
                             dmgOutSource = x[self.combatlogDict["ID"]]
                             if dmgOutSource in damaged.dmginTable:
@@ -1904,7 +1913,8 @@ class parser:
                                 shielddamage = damage1
                             else:
                                 hulldamage = damage1
-
+                            attacker.hulllDamage += hulldamage
+                            attacker.shieldDamage += shielddamage
                             if source in attacker.dmgoutDict:
                                 newTarget = True
                                 for col in attacker.dmgoutTable[attacker.dmgoutDict[source]]:
