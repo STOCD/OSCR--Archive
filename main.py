@@ -6,15 +6,19 @@ class Launcher():
 
     version = '2023.9a110'
 
+    # holds the style of the app
     theme = {
+        # general style
         'app': {
             'bg': '#1a1a1a',
             'fg': '#eeeeee',
             'oscr': '#c82934',
-            'margin': 10,
-            'font': ('Overpass', 15, 'normal'),
+            'font': ('Overpass', 15, 'normal'), # used when no font is specified in style definition
             'font-fallback': ('Yu Gothic UI', 'Nirmala UI', 'Microsoft YaHei UI', 'sans-serif'),
+            'frame_thickness': 8,
+            # this styles every item of the given type
             'style': {
+                # scroll bar trough (invisible)
                 'QScrollBar': {
                     'background': 'none',
                     'border': 'none',
@@ -22,86 +26,99 @@ class Launcher():
                     'margin': 0
                 },
                 'QScrollBar:vertical': {
-                    'width': 10,    
+                    'width': 10,
                 },
                 'QScrollBar:horizontal': {
                     'height': 10,    
                 },
+                # space above and below the scrollbar handle
                 'QScrollBar::add-page, QScrollBar::sub-page': {
                     'background': 'none'
                 },
+                # scroll bar handle
                 'QScrollBar::handle': {
                     'background-color': 'rgba(0,0,0,.75)',
                     'border-radius': 5,
                     'border': 'none'
                 },
+                # scroll bar arrow buttons
                 'QScrollBar::add-line, QScrollBar::sub-line': {
-                    'height': 0
+                    'height': 0 # hiding the arrow buttons
                 },
-                'QTableCornerButton::section': {
-                    'background-color': '#1a1a1a'
-                },
+                # top left corner of table
                 'QTableCornerButton::section': {
                     'background-color': '#1a1a1a'
                 }
             }
         },
+        # shortcuts, @bg -> means bg in this sub-dictionary
         'defaults': {
-            'bg': '#1a1a1a',
-            'mbg': '#242424',
-            'lbg': '#404040',
-            'oscr': '#c82934',
+            'bg': '#1a1a1a', # background
+            'mbg': '#242424', # medium background
+            'lbg': '#404040', # light background
+            'oscr': '#c82934', # accent
+            'loscr': '#20c82934', # light accent (12.5% opacity)
             'font': ('Overpass', 15, 'normal'),
-            'fg': '#eeeeee',
-            'mfg': '#bbbbbb',
-            'bc': '#888888',
-            'sep': 2,
-            'margin': 10
+            'fg': '#eeeeee', # foreground (usually text)
+            'mfg': '#bbbbbb', # medium foreground
+            'bc': '#888888', # border color
+            'bw': 1, # border width
+            'sep': 2, # seperator -> width of major seperating lines
+            'margin': 10, # default margin between widgets
+            'isp': 15, # item spacing
         },
+        # dark frame
         'frame': {
             'background-color': '@bg',
             'margin': 0,
             'padding': 0
         },
+        # medium frame
         'medium_frame': {
             'background-color': '@mbg',
             'margin': 0,
             'padding': 0
         },
+        # light frame
         'light_frame': {
             'background': '@lbg',
             'margin': 0,
             'padding': 0
         },
+        # default text (non-button, non-entry, non table)
         'label': {
             'color': '@fg',
             'margin': (3, 0, 3, 0),
-            'padding-left': 0,
-            'qproperty-indent': '0'
+            'qproperty-indent': '0' # disables auto-indent
         },
+        # default button
         'button': {
             'background': 'none',
             'color': '@fg',
             'text-decoration': 'none',
-            'border': 'none', #'1px solid #606060',
+            'border': 'none',
             'border-radius': 2,
             'margin': (3, 10, 3, 10),
             'padding': (2, 5, 0, 5),
             'font': ('Overpass', 15, 'medium'),
             ':hover': {
                 'color': '@fg',
-                'border': '1px solid #c82934'
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@oscr'
             }
         },
+        # big button (main tab switcher)
         'menu_button': {
             'background': 'none',
             'color': '@fg',
-            'text-decoration': 'none',
+            'text-decoration': 'none', # removes underline
             'border': 'none',
-            'margin-left': 10,
-            'margin-top': 6,
-            'margin-bottom': 4,
-            'margin-right': 10,
+            'margin': (6, 10, 4, 10),
+            # 'margin-left': 10,
+            # 'margin-top': 6,
+            # 'margin-bottom': 4,
+            # 'margin-right': 10,
             'padding': 0,
             'font': ('Overpass', 20, 'bold'),
             ':hover': {
@@ -109,64 +126,78 @@ class Launcher():
                 'color': '@fg'
             }
         },
+        # inconspicious button
         'small_button': {
             'background': 'none',
             'border': 'none',
             'border-radius': 3,
-            'margin-left': 4,
-            'margin-top': 4,
-            'margin-bottom': 1,
-            'margin-right': 2,
+            'margin': (4, 2, 1, 4),
+            # 'margin-left': 4,
+            # 'margin-top': 4,
+            # 'margin-bottom': 1,
+            # 'margin-right': 2,
             'padding': (2, 0, 2, 0),
             ':hover': {
                 'background-color': 'rgba(136,136,136,.2)'
             }
         },
+        # button that holds icon
         'icon_button': {
             'background': 'none',
-            'border': '1px solid #888888',
+            'border-width': '@bw',
+            'border-style': 'solid',
+            'border-color': '@bc',
             'border-radius': 3,
-            'margin-left': 1,
-            'margin-top': 1,
-            'margin-bottom': 1,
-            'margin-right': 1,
+            'margin': 1,
             'padding': (2, 0, 2, 0),
             ':hover': {
                 'border-color': '@oscr'
             }
         },
+        # line of user-editable text
         'entry': {
             'background-color': '@lbg',
             'color': '@fg',
-            'border': '1px solid #888888',
+            'border-width': '@bw',
+            'border-style': 'solid',
+            'border-color': '@bc',
             'border-radius': 2,
             'font': ('Overpass', 12, 'normal'),
-            ':focus': {
+            ':focus': { # cursor is inside the line
                 'border-color': '@oscr'
             }
         },
+        # scrollable list of items; ::item refers to the rows
         'listbox': {
             'background-color': '@lbg',
             'color': '@fg',
-            'border': '1px solid #888888',
+            'border-width': '@bw',
+            'border-style': 'solid',
+            'border-color': '@bc',
             'border-radius': 2,
             'font': ('Overpass', 10, 'normal'),
-            'outline': 0,
+            'outline': '0', # removes dotted line around clicked item
             '::item': {
-                'border': '1px solid #404040'
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@lbg',
             },
             '::item:selected': {
                 'background': 'none',
-                'border': '1px solid #c82934',
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@oscr',
                 'border-radius': 2,
             },
+            # selected but not the last click of the user
             '::item:selected:!active': {
                 'color':'@fg'
             },
             '::item:hover': {
-                'background-color': '#20c82934',
+                'background-color': '@loscr',
             },
         },
+        # holds sub-pages
         'tabber': {
             'background': 'none',
             'border': 'none',
@@ -176,82 +207,94 @@ class Launcher():
                 'border': 'none'
             }
         },
+        # default tabber buttons (hidden)
         'tabber_tab': {
             '::tab': {
                 'height': 0,
                 'width': 0
             }
         },
+        # table; ::item refers to the cells, :alternate is the alternate style -> s.c: table_alternate
         'table': {
             'color': '@fg',
             'background-color': '@bg',
-            'border': '1px solid #888888',
-            'gridline-color': 'rgba(0,0,0,0)',
-            'outline': '0',
+            'border-width': '@bw',
+            'border-style': 'solid',
+            'border-color': '@bc',
+            'gridline-color': 'rgba(0,0,0,0)', # -> s.c: table_gridline
+            'outline': '0', # removes dotted line around clicked item
             'margin': (0, 10, 10, 0),
             'font': ('Roboto Mono', 15, 'Medium'),
             '::item': {
                 'padding': (0, 5, 0, 5),
-                'border': '1px solid #1a1a1a',
-                'border-right': '1px solid #888888'
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@bg',
+                'border-right-width': '@bw',
+                'border-right-style': 'solid',
+                'border-right-color': '@bc',
             },
             '::item:alternate': {
                 'padding': (0, 5, 0, 5),
-                'border': '1px solid #242424',
-                'background-color': '#242424',
-                'border-right': '1px solid #888888'
+                'background-color': '@mbg',
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@mbg',
+                'border-right-width': '@bw',
+                'border-right-style': 'solid',
+                'border-right-color': '@bc',
             },
             '::item:hover': {
-                'background-color': '#20c82934',
+                'background-color': '@loscr',
                 'padding': (0, 5, 0, 5)
             },
             '::item:focus': {
-                'background-color': '@bg',#'#20242424',
+                'background-color': '@bg',
                 'color': '@fg',
-                'font-weight': '900',
             },
             '::item:selected': {
                 'background-color': '@bg',
                 'color': '@fg',
                 'border': '1px solid #c82934',
             },
+            # selected but not the last click of the user
             '::item:alternate:focus': {
-                'background-color': '#242424'
+                'background-color': '@mbg'
             },
             '::item:alternate:selected': {
-                'background-color': '#242424'
+                'background-color': '@mbg'
             }
         },
+        # heading of the table; ::section refers to the individual buttons
         'table_header': {
             'color': '@bg',
             'background-color': '@mbg',
             'border': 'none',
-            'border-bottom': '2px solid #888888',
-            'outline': '0',
+            'border-bottom-width': '@sep',
+            'border-bottom-style': 'solid',
+            'border-bottom-color': '@bc',
+            'outline': '0', # removes dotted line around clicked item
             'font': ('Overpass', 15, 'Medium'),
             '::section': {
                 'background-color': '@mbg',
                 'color': '@fg',
-                'padding': (0, -8, -3, 6),
+                'padding': (0, -8, -3, 6), # don't ask
                 'border': 'none',
                 'margin': 0
             },
             '::section:hover': {
-                'background-color': '#20c82934'
-            },
-            '::up-arrow': {
-                'color': '#888888'
-            },
-            '::down-arrow': {
-                'color': '#888888'
+                'background-color': '@loscr'
             }
         },
+        # index of the table (vertical header); ::section refers to the individual buttons
         'table_index': {
             'color': '@bg',
             'background-color': '@mbg',
             'border': 'none',
-            'border-right': '2px solid #888888',
-            'outline': '0',
+            'border-right-width': '@sep',
+            'border-right-style': 'solid',
+            'border-right-color': '@bc',
+            'outline': '0', # removes dotted line around clicked item
             '::section': {
                 'background-color': '@mbg',
                 'color': '@fg',
@@ -260,32 +303,34 @@ class Launcher():
                 'margin': 0
             },
             '::section:hover': {
-                'background-color': '#20c82934'
+                'background-color': '@loscr'
             },
         },
+        # analysis table; ::item refers to the cells; ::branch refers to the space on the left of the rows
         'tree_table': {
             'border': '1px solid #888888',
             'background-color': '@bg',
-            'alternate-background-color': '#242424',
+            'alternate-background-color': '@mbg',
             'color': '@fg',
             'margin': (10, 0, 10, 0),
-            'outline': '0',
+            'outline': '0', # removes dotted line around clicked item
             'font': ('Overpass', 11, 'Normal'),
             '::item': {
                 'font': ('Roboto Mono', 11, 'Normal'),
-                'border-right': '1px solid #888888',
+                'border-right-width': '@bw',
+                'border-right-style': 'solid',
+                'border-right-color': '@bc',
                 'background-color': 'none',
                 'padding': (1, 4, 1, 4)
             },
             '::item:selected, ::item:focus': {
-                'border': '1px solid #c82934',
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@oscr',
                 'color': '@fg'
             },
-            '::item:hover': {
-                'background-color': '#20c82934',
-            },
-            '::item:alternate:hover': {
-                'background-color': '#20c82934',
+            '::item:hover, ::item:alternate:hover': {
+                'background-color': '@loscr',
             },
             '::branch:hover': {
                 'background-color': '@bg',
@@ -294,23 +339,22 @@ class Launcher():
             '::branch': {
                 'background-color': '@bg'
             },
+            # down-pointing arrow
             '::branch:open:has-children': {
                 'image': 'url(assets/arrow-down.svg)'
             },
+            # right-pointing arrow
             '::branch:closed:has-children': {
                 'image': 'url(assets/arrow-right.svg)'
-            },
-            # '::branch:closed:has-children:hover': {
-            #     'color': 'url(assets/arrow-right-hover.svg)'
-            # },
-            # '::branch:open:has-children:hover': {
-            #     'color': 'url(assets/arrow-down-hover.svg)'
-            # }
+            }
         },
+        # header of the analysis table; ::section refers to the individual buttons
         'tree_table_header': {
             'background-color': '@bg',
             'border': 'none',
-            'border-bottom': '2px solid #888888',
+            'border-bottom-width': '@sep',
+            'border-bottom-style': 'solid',
+            'border-bottom-color': '@bc',
             'font': ('Overpass', 12, 'Medium'),
             '::section': {
                 'background-color': '@mbg',
@@ -318,11 +362,17 @@ class Launcher():
                 'border': 'none'
             },
             '::section:hover': {
-                'border': '1px solid #c82934'
+                'border-width': '@bw',
+                'border-style': 'solid',
+                'border-color': '@oscr',
             },
         },
+        # other style decisions
         's.c': {
-            'button_icon_size': 24
+            'sidebar_item_width': 0.15,
+            'button_icon_size': 24,
+            'table_alternate': True,
+            'table_gridline': False,
         }
     }
 

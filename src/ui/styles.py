@@ -11,7 +11,7 @@ weight_conversion = {
 def get_style(self, widget, override={}):
     if widget is None or widget == '':
         return get_css(self, override)
-    elif widget != 'app' and widget != 'defaults' and widget in self.theme.keys():
+    elif widget != 'app' and widget != 'defaults' and widget != 's.c'and widget in self.theme.keys():
         if len(override) > 0:
             style = merge_style(self, self.theme[widget], override)
         else:
@@ -55,7 +55,7 @@ def get_css(self, style:dict):
 def get_style_class(self, class_name:str, widget, override={}):
     if widget is None or widget == '':
         style = override
-    elif widget != 'app' and widget != 'defaults' and widget in self.theme.keys():
+    elif widget != 'app' and widget != 'defaults' and widget != 's.c' and widget in self.theme.keys():
         if len(override) > 0:
             style = merge_style(self, self.theme[widget], override)
         else:

@@ -47,14 +47,14 @@ class OpenSourceCombatlogReader(OscrGui):
         self.icons['collapse-left'] = self.load_icon('collapse-left.svg')
         self.icons['expand-right'] = self.load_icon('expand-right.svg')
         self.icons['collapse-right'] = self.load_icon('collapse-right.svg')
-        self.icons['gear'] = self.load_icon('gear.svg')
+        self.icons['refresh'] = self.load_icon('refresh-cw.svg')
 
     def init_settings(self):
         """
         Prepares settings.
         """
         _, _, screen_width, _ = self.app.primaryScreen().availableGeometry().getRect()
-        self.settings['sidebar_item_width'] = 0.15 * screen_width
+        self.settings['sidebar_item_width'] = self.theme['s.c']['sidebar_item_width'] * screen_width
         self.settings['base_path'] = self.format_path(self.app_dir)
         style_path = rf"{self.app_dir}\\{self.settings['plot_stylesheet_path']}"
         self.settings['plot_stylesheet_path'] = os.path.abspath(style_path)

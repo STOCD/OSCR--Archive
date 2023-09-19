@@ -80,7 +80,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
     def setup_left_sidebar(self, frame:QFrame):
         left_layout = QVBoxLayout()
-        m = self.theme['app']['margin']
+        m = self.theme['defaults']['margin']
         left_layout.setContentsMargins(m, m, m, m)
         left_layout.setSpacing(0)
         left_layout.setAlignment(ATOP)
@@ -97,7 +97,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         button_frame = self.create_frame(frame, 'medium_frame')
         button_frame.setSizePolicy(SMINMAX)
         entry_button_config = {
-            'default': {'margin-bottom': 15},
+            'default': {'margin-bottom': '@isp'},
             'Browse ...': {'callback': lambda: self.browse_log(self.entry), 'align': ALEFT},
             'Analyze': {'callback': lambda: self.analyze_log_callback(path=self.entry.text()), 'align': ARIGHT}
         }
@@ -105,10 +105,11 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         button_frame.setLayout(entry_buttons)
         left_layout.addWidget(button_frame)
 
-        gear_button = self.create_icon_button(self.icons['gear'], 'icon_button', frame)
-        left_layout.addWidget(gear_button, alignment=ARIGHT)
+        refresh_button = self.create_icon_button(self.icons['refresh'], 'icon_button', frame)
+        left_layout.addWidget(refresh_button, alignment=ARIGHT)
 
-        background_frame = self.create_frame(frame, 'light_frame', {'border-radius': 2})
+        background_frame = self.create_frame(frame, 'light_frame', 
+                {'border-radius': self.theme['listbox']['border-radius']})
         background_frame.setSizePolicy(SMAXMIN)
         background_layout = QVBoxLayout()
         background_layout.setContentsMargins(0, 0, 0, 0)
@@ -121,7 +122,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         background_layout.addWidget(self.current_combats)
         left_layout.addWidget(background_frame, stretch=1)
         
-        gear_button.clicked.connect(lambda: self.analyze_log_callback(self.current_combats.currentRow()))
+        refresh_button.clicked.connect(lambda: self.analyze_log_callback(self.current_combats.currentRow()))
 
         frame.setLayout(left_layout)
 
@@ -187,7 +188,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
             'Damage Graph': {'callback': lambda: o_tabber.setCurrentIndex(2), 'align':ACENTER}
         }
         switches = self.create_button_series(switch_frame, switch_style, 'button')
-        switches.setContentsMargins(0, self.theme['app']['margin'], 0, 0)
+        switches.setContentsMargins(0, self.theme['defaults']['margin'], 0, 0)
         switch_frame.setLayout(switches)
         o_frame.setLayout(layout)
 
@@ -231,12 +232,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
         main_layout.addWidget(lbl)
 
-        menu_frame = self.create_frame(bg_frame, 'frame', {'background':'#c82934'})
+        menu_frame = self.create_frame(bg_frame, 'frame', {'background':'@oscr'})
         menu_frame.setSizePolicy(SMAXMAX)
         menu_frame.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(menu_frame)
         menu_button_style = {
-            'Overview': {'style':{'margin-left':15}},
+            'Overview': {'style':{'margin-left': '@isp'}},
             'Analysis': {},
             'League Standings': {},
             'Settings': {},
@@ -246,7 +247,8 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         menu_frame.setLayout(bt_lay)
         self.widgets['main_menu_buttons'] = buttons
 
-        main_frame = self.create_frame(bg_frame, 'frame', {'margin':'0px 8px 8px 8px'})
+        w = self.theme['app']['frame_thickness']
+        main_frame = self.create_frame(bg_frame, 'frame', {'margin':(0, w, w, w)})
         main_frame.setSizePolicy(SMINMIN)
         main_layout.addWidget(main_frame)
         bg_frame.setLayout(main_layout)

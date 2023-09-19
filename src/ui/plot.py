@@ -131,8 +131,8 @@ class PlotWrapper():
                 labels.append('')
             else:
                 labels.append(name)
-        axis.bar_label(bars, labels=labels, color=self.theme['app']['fg'], fontsize=17,
-                padding=self.theme['app']['margin'], label_type='edge', fontweight='bold')
+        axis.bar_label(bars, labels=labels, color=self.theme['defaults']['fg'], fontsize=17,
+                padding=self.theme['defaults']['margin'], label_type='edge', fontweight='bold')
 
     def format_bar_labels(self, values):
         """formats bar labels; '1000' becomes '1 k', '1000000' becomes '1 M'"""
@@ -179,8 +179,8 @@ class PlotWrapper():
         sort = SortingProxy()
         sort.setSourceModel(model)
         table = QTableView(self.widgets['overview_tab_frames'][0])
-        table.setAlternatingRowColors(True)
-        table.setShowGrid(False)
+        table.setAlternatingRowColors(self.theme['s.c']['table_alternate'])
+        table.setShowGrid(self.theme['s.c']['table_gridline'])
         table.setSortingEnabled(True)
         table.setModel(sort)
         table.setStyleSheet(self.get_style_class('QTableView', 'table'))
