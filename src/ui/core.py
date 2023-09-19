@@ -76,6 +76,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.setup_left_sidebar(left)
         self.setup_main_tabber(center)
         self.setup_overview_frame()
+        self.setup_analysis_frame()
 
     def setup_left_sidebar(self, frame:QFrame):
         left_layout = QVBoxLayout()
@@ -129,7 +130,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         Sets up the tabber switching between Overview, Analysis, League and Settings
         """
         o_frame = self.create_frame(None, 'frame')
-        a_frame = self.create_frame(None, 'frame', {'background': 'blue'})
+        a_frame = self.create_frame(None, 'frame')
         l_frame = self.create_frame(None, 'frame', {'background': 'pink'})
         s_frame = self.create_frame(None, 'frame', {'background': 'brown'})
         main_tabber = QTabWidget(frame)
@@ -189,6 +190,23 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         switches.setContentsMargins(0, self.theme['app']['margin'], 0, 0)
         switch_frame.setLayout(switches)
         o_frame.setLayout(layout)
+
+    def setup_analysis_frame(self):
+        """
+        Sets up the frame housing the detailed analysis table and graph
+        """
+        a_frame = self.widgets['main_tab_frames'][1]
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        #graph
+
+        tree = self.create_analysis_table(a_frame, 'tree_table')
+        layout.addWidget(tree)
+        self.widgets['analysis_table'] = tree
+        
+        a_frame.setLayout(layout)
 
 
     def create_master_layout(self, parent):
@@ -284,3 +302,5 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
             self.get_data(combat_id)
             self.create_overview()
             self.current_combat_id = combat_id
+        
+        self.populate_analysis()

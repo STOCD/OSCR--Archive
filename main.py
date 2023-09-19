@@ -39,7 +39,10 @@ class Launcher():
                     'height': 0
                 },
                 'QTableCornerButton::section': {
-                    'background': '#1a1a1a'
+                    'background-color': '#1a1a1a'
+                },
+                'QTableCornerButton::section': {
+                    'background-color': '#1a1a1a'
                 }
             }
         },
@@ -56,12 +59,12 @@ class Launcher():
             'margin': 10
         },
         'frame': {
-            'background': '@bg',
+            'background-color': '@bg',
             'margin': 0,
             'padding': 0
         },
         'medium_frame': {
-            'background': '@mbg',
+            'background-color': '@mbg',
             'margin': 0,
             'padding': 0
         },
@@ -116,7 +119,7 @@ class Launcher():
             'margin-right': 2,
             'padding': (2, 0, 2, 0),
             ':hover': {
-                'background': 'rgba(136,136,136,.2)'
+                'background-color': 'rgba(136,136,136,.2)'
             }
         },
         'icon_button': {
@@ -133,7 +136,7 @@ class Launcher():
             }
         },
         'entry': {
-            'background': '@lbg',
+            'background-color': '@lbg',
             'color': '@fg',
             'border': '1px solid #888888',
             'border-radius': 2,
@@ -143,7 +146,7 @@ class Launcher():
             }
         },
         'listbox': {
-            'background': '@lbg',
+            'background-color': '@lbg',
             'color': '@fg',
             'border': '1px solid #888888',
             'border-radius': 2,
@@ -161,7 +164,7 @@ class Launcher():
                 'color':'@fg'
             },
             '::item:hover': {
-                'background': '#20c82934',
+                'background-color': '#20c82934',
             },
         },
         'tabber': {
@@ -181,7 +184,7 @@ class Launcher():
         },
         'table': {
             'color': '@fg',
-            'background': '@bg',
+            'background-color': '@bg',
             'border': '1px solid #888888',
             'gridline-color': 'rgba(0,0,0,0)',
             'outline': '0',
@@ -195,46 +198,46 @@ class Launcher():
             '::item:alternate': {
                 'padding': (0, 5, 0, 5),
                 'border': '1px solid #242424',
-                'background': '#242424',
+                'background-color': '#242424',
                 'border-right': '1px solid #888888'
             },
             '::item:hover': {
-                'background': '#20c82934',
+                'background-color': '#20c82934',
                 'padding': (0, 5, 0, 5)
             },
             '::item:focus': {
-                'background': '@bg',#'#20242424',
+                'background-color': '@bg',#'#20242424',
                 'color': '@fg',
                 'font-weight': '900',
             },
             '::item:selected': {
-                'background': '@bg',
+                'background-color': '@bg',
                 'color': '@fg',
                 'border': '1px solid #c82934',
             },
             '::item:alternate:focus': {
-                'background': '#242424'
+                'background-color': '#242424'
             },
             '::item:alternate:selected': {
-                'background': '#242424'
+                'background-color': '#242424'
             }
         },
         'table_header': {
             'color': '@bg',
-            'background': '@mbg',
+            'background-color': '@mbg',
             'border': 'none',
             'border-bottom': '2px solid #888888',
             'outline': '0',
             'font': ('Overpass', 15, 'Medium'),
             '::section': {
-                'background': '@mbg',
+                'background-color': '@mbg',
                 'color': '@fg',
                 'padding': (0, -8, -3, 6),
                 'border': 'none',
                 'margin': 0
             },
             '::section:hover': {
-                'background': '#20c82934'
+                'background-color': '#20c82934'
             },
             '::up-arrow': {
                 'color': '#888888'
@@ -245,19 +248,77 @@ class Launcher():
         },
         'table_index': {
             'color': '@bg',
-            'background': '@mbg',
+            'background-color': '@mbg',
             'border': 'none',
             'border-right': '2px solid #888888',
             'outline': '0',
             '::section': {
-                'background': '@mbg',
+                'background-color': '@mbg',
                 'color': '@fg',
                 'padding': (0, 3, 0, 3),
                 'border': 'none',
                 'margin': 0
             },
             '::section:hover': {
-                'background': '#20c82934'
+                'background-color': '#20c82934'
+            },
+        },
+        'tree_table': {
+            'border': '1px solid #888888',
+            'background-color': '@bg',
+            'alternate-background-color': '#242424',
+            'color': '@fg',
+            'margin': (10, 0, 10, 0),
+            'outline': '0',
+            'font': ('Overpass', 11, 'Normal'),
+            '::item': {
+                'font': ('Roboto Mono', 11, 'Normal'),
+                'border-right': '1px solid #888888',
+                'background-color': 'none',
+                'padding': (1, 4, 1, 4)
+            },
+            '::item:selected, ::item:focus': {
+                'border': '1px solid #c82934',
+                'color': '@fg'
+            },
+            '::item:hover': {
+                'background-color': '#20c82934',
+            },
+            '::item:alternate:hover': {
+                'background-color': '#20c82934',
+            },
+            '::branch:hover': {
+                'background-color': '@bg',
+                'border': 'none'
+            },
+            '::branch': {
+                'background-color': '@bg'
+            },
+            '::branch:open:has-children': {
+                'image': 'url(assets/arrow-down.svg)'
+            },
+            '::branch:closed:has-children': {
+                'image': 'url(assets/arrow-right.svg)'
+            },
+            # '::branch:closed:has-children:hover': {
+            #     'color': 'url(assets/arrow-right-hover.svg)'
+            # },
+            # '::branch:open:has-children:hover': {
+            #     'color': 'url(assets/arrow-down-hover.svg)'
+            # }
+        },
+        'tree_table_header': {
+            'background-color': '@bg',
+            'border': 'none',
+            'border-bottom': '2px solid #888888',
+            'font': ('Overpass', 12, 'Medium'),
+            '::section': {
+                'background-color': '@mbg',
+                'color': '@fg',
+                'border': 'none'
+            },
+            '::section:hover': {
+                'border': '1px solid #c82934'
             },
         },
         's.c': {

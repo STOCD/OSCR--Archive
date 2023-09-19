@@ -18,7 +18,8 @@ class OpenSourceCombatlogReader(OscrGui):
         'second_menu_buttons': [],
         'main_tab_frames': [],
         'overview_tab_frames': [],
-        'overview_graphs': []
+        'overview_graphs': [],
+        'analysis_table': None,
     }
     
     def __init__(self, version, theme, args, path, config) -> None:

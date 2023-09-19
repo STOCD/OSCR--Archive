@@ -5,8 +5,9 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QTableView, QAbstractItemView, QHeaderView
 from PyQt6.QtCore import QSortFilterProxyModel
 import numpy as np
-from src.data import TableModel, SortingProxy
-from src.ui.widgets import SMINMIN, ACENTER
+from src.data import TableModel, SortingProxy, TreeModel
+from src.ui.widgets import SMINMIN, ACENTER, RFIXED, SMPIXEL
+from src.functions import clean_player_id
 
 
 class PlotWrapper():
@@ -63,7 +64,7 @@ class PlotWrapper():
             f, a = plt.subplots()
             for player, array in self.misc_combat_data[7].items():
                 a.plot(np.divide(array[0], 1000), array[1], 
-                        label=self.clean_player_id(player))
+                        label=clean_player_id(player))
             a.legend()
         self.widgets['overview_graphs'].append(f)
         chart2 = FigureCanvasQTAgg(f)
@@ -154,10 +155,6 @@ class PlotWrapper():
         """
         return np.array([el[1] for el in self.overview_data[0]])
 
-    def clean_player_id(self, id: str):
-        """cleans player id and returns handle"""
-        return id[id.find(' ')+1:-1]
-
     def create_grouped_bar_plot(self, data):
         """
         Creates a bar plot with grouped bars and returns figure and axis
@@ -170,7 +167,7 @@ class PlotWrapper():
         offsets = positions - np.median(positions)
         for off, (player, ar) in zip(offsets, data.items()):
             x = np.divide(ar[0], 1000) + off
-            a.bar(x, ar[1], label=self.clean_player_id(player), width=wd)
+            a.bar(x, ar[1], label=clean_player_id(player), width=wd)
         return f, a
 
     def create_overview_table(self):
@@ -187,14 +184,15 @@ class PlotWrapper():
         table.setSortingEnabled(True)
         table.setModel(sort)
         table.setStyleSheet(self.get_style_class('QTableView', 'table'))
-        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setHorizontalScrollMode(SMPIXEL)
+        table.setVerticalScrollMode(SMPIXEL)
         table.horizontalHeader().setStyleSheet(self.get_style_class('QHeaderView', 'table_header'))
         table.verticalHeader().setStyleSheet(self.get_style_class('QHeaderView', 'table_index'))
         table.resizeColumnsToContents()
         for col in range(len(model._header)):
             table.horizontalHeader().resizeSection(col, table.horizontalHeader().sectionSize(col) + 5)
         table.resizeRowsToContents()
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
-        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        table.horizontalHeader().setSectionResizeMode(RFIXED)
+        table.verticalHeader().setSectionResizeMode(RFIXED)
         table.setSizePolicy(SMINMIN)
         return table

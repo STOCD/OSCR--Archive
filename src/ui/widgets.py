@@ -1,8 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QPushButton, QFrame, QLabel
+from PyQt6.QtWidgets import QWidget, QSizePolicy, QPushButton, QFrame, QLabel, QTreeView, QHeaderView, QAbstractItemView
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QPixmap, QPainter, QIcon
 from PyQt6.QtCore import QRect, Qt, QSize
 from types import FunctionType, BuiltinFunctionType, MethodType
+from src.functions import resize_tree_table
 
 FUNC = (FunctionType, BuiltinFunctionType, MethodType)
 
@@ -15,6 +16,11 @@ ATOP = Qt.AlignmentFlag.AlignTop
 ARIGHT = Qt.AlignmentFlag.AlignRight
 ALEFT = Qt.AlignmentFlag.AlignLeft
 ACENTER = Qt.AlignmentFlag.AlignCenter
+AVCENTER = Qt.AlignmentFlag.AlignVCenter
+
+RFIXED = QHeaderView.ResizeMode.Fixed
+
+SMPIXEL = QAbstractItemView.ScrollMode.ScrollPerPixel
 
 class WidgetBuilder():
 
@@ -158,6 +164,27 @@ class WidgetBuilder():
         if ret: return layout, tuple(button_list)
         else: return layout
             
+    def create_analysis_table(self, parent, widget):
+        """
+        Creates and returns a QTreeView with parent, styled according to widget
+        """
+        table = QTreeView(parent)
+        table.setStyleSheet(self.get_style_class('QTreeView', widget))
+        table.setSizePolicy(SMINMIN)
+        table.setAlternatingRowColors(True)
+        table.setHorizontalScrollMode(SMPIXEL)
+        table.setVerticalScrollMode(SMPIXEL)
+        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
+        table.header().setStyleSheet(self.get_style_class('QHeaderView', 'tree_table_header'))
+        table.header().setSectionResizeMode(RFIXED)
+        table.header().setSectionsMovable(False)
+        table.header().setMinimumSectionSize(1)
+        table.header().setSectionsClickable(True)
+        table.expanded.connect(lambda: resize_tree_table(table))
+        table.collapsed.connect(lambda: resize_tree_table(table))
+        return table
 
 class FlipButton(QPushButton):
     """
