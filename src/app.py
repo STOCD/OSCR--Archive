@@ -56,7 +56,7 @@ class OpenSourceCombatlogReader(OscrGui):
         _, _, screen_width, _ = self.app.primaryScreen().availableGeometry().getRect()
         self.settings['sidebar_item_width'] = int(self.theme['s.c']['sidebar_item_width'] * screen_width)
         self.settings['base_path'] = self.format_path(self.app_dir)
-        style_path = rf"{self.app_dir}\\{self.settings['plot_stylesheet_path']}"
+        style_path = rf"{self.app_dir}/{self.settings['plot_stylesheet_path']}"
         self.settings['plot_stylesheet_path'] = os.path.abspath(style_path)
 
     def attach_callbacks(self):
