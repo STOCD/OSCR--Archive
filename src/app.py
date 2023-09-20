@@ -10,7 +10,7 @@ class OpenSourceCombatlogReader(OscrGui):
 
     settings = {
         'sidebar_item_width': 0,
-        'plot_stylesheet_path': r'\src\ui\oscr_default.mplstyle',
+        'plot_stylesheet_path': r'/src/ui/oscr_default.mplstyle',
     }
 
     widgets = {
@@ -57,7 +57,7 @@ class OpenSourceCombatlogReader(OscrGui):
         self.settings['sidebar_item_width'] = int(self.theme['s.c']['sidebar_item_width'] * screen_width)
         self.settings['base_path'] = self.format_path(self.app_dir)
         style_path = rf"{self.app_dir}/{self.settings['plot_stylesheet_path']}"
-        self.settings['plot_stylesheet_path'] = os.path.abspath(style_path)
+        self.settings['plot_stylesheet_path'] = os.path.normpath(os.path.abspath(style_path))
 
     def attach_callbacks(self):
         """
