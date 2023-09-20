@@ -269,8 +269,8 @@ class BannerLabel(QWidget):
         if not self.p.isNull():
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            w = self.rect().width()
-            h = w * 126/2880
+            w = int(self.rect().width())
+            h = int(w * 126/2880)
             rect = QRect(0, 0, w, h)
             painter.drawPixmap(rect, self.p)
             self.setMaximumHeight(h)
