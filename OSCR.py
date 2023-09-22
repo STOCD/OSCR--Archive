@@ -491,24 +491,19 @@ class parser:
         self.path = path
 
     def createTableInstanceAlternate(self, isPlayer):
-        self.tableArray.append(players(self.ID, isPlayer, self.timeToTimeAndDate(self.date)))
-        self.playerdict.update({self.ID: self.counter2})
-        self.tableArray[self.counter2].dmgoutTable.append([])
+        self.tableArray.append(players(self.targetID, isPlayer, self.timeToTimeAndDate(self.date)))
+        self.playerdict.update({self.targetID: self.counter2})
         self.counter2 += 1
 
     def createTableInstance(self):  # creates a new class instance and appends to list
-        if self.ID[0] == "P":
-            player = True
-        else:
-            player = False
-        if player:
+        if self.isPlayer:
             self.tableArray.append(players(self.ID, True, self.timeToTimeAndDate(self.date)))
             self.playerdict.update({self.ID: self.counter2})
+            self.counter2 += 1
         else:
             self.tableArray.append(players(self.ID, False, self.timeToTimeAndDate(self.date)))
             self.playerdict.update({self.ID: self.counter2})
-        self.tableArray[self.counter2].dmgoutTable.append([])
-        self.counter2 += 1
+            self.counter2 += 1
 
     def getGlobalTime(self):
         self.globalCombatTime = (self.globalCombatEnd - self.globalCombatStart).total_seconds()
@@ -526,15 +521,13 @@ class parser:
 
         return time
 
-    def generateHandle(self,
-                       IDSplyce):  # returns player handle, can further splice this for only @xxxx or character name.
+    def generateHandle(self,IDSplyce):  # returns player handle, can further splice this for only @xxxx or character name.
         IDSplyce = IDSplyce.split(" ", 1)
         IDSplyce = IDSplyce[1]
         IDSplyce = IDSplyce[:-1]
         return IDSplyce
 
-    def generateID(self,
-                   IDSplyce):  # returns player ID (not necessary if necessary, might be removed down the road if unnecessary
+    def generateID(self,IDSplyce):  # returns player ID (not necessary if necessary, might be removed down the road if unnecessary
         OGSplyce = IDSplyce
         IDSplyce = IDSplyce.split(" ")
         IDSplyce = IDSplyce[0]
@@ -1594,24 +1587,26 @@ class parser:
             self.sourceID = x[self.combatlogDict["sourceID"]]
             self.resist = 0
             self.hullAttacks = 0
+            self.isPlayer = (True if self.ID[0] == "P" else False)
+            self.targetIsPlayer = (True if self.targetID[0] == "P" else False)
 
+            if self.ID not in self.playerList and self.ID not in self.NPCs:
+                if self.isPlayer:
 
-            if not self.ID in self.playerList:
-                if self.ID[0] == "P":
-                    self.playerList.append(x[self.combatlogDict["ID"]])
+                    self.playerList.append(self.ID)
                     self.createTableInstance()
-                elif not [self.character, self.ID] in self.NPCs:
+                elif not self.ID in self.NPCs:
                     self.NPCs.append(self.ID)
                     self.createTableInstance()
-            if not self.targetID in self.playerdict and not self.targetID == "*" and not self.targetID == None:
-                    if self.targetID[0] == "P":
+            if self.targetID not in self.NPCs and self.targetID not in self.playerList:
+                if not self.targetID == "*" and not self.targetID == None:
+                    if self.targetID not in self.playerList and self.targetIsPlayer:
                         self.playerList.append(self.targetID)
                         self.createTableInstanceAlternate(True)
-                    elif not self.targetID in self.NPCs:
+                    elif self.targetID not in self.NPCs:
                         self.NPCs.append(self.targetID)
                         self.createTableInstanceAlternate(False)
-
-            if self.targetID in self.playerList:
+            if self.targetID in self.playerList or self.targetID in self.NPCs:
                 self.damaged = self.tableArray[self.playerdict[self.targetID]]
             else:
                 self.damaged = players("name", False, None)
@@ -1723,8 +1718,6 @@ class parser:
 
 
 
-
-
         self.getGlobalTime()
         for table in self.tableArray:
             table.globalStartTime, table.globalFinishTime, table.globalRunTime = self.globalCombatStart, self.globalCombatEnd, self.globalCombatTime
@@ -1732,7 +1725,7 @@ class parser:
             table.updateTables()
         if self.difficulty == None:
             self.detectDifficulty()
-
+        print(len(self.tableArray), len(self.playerList), len(self.NPCs), len(self.playerdict))
     def detectDifficulty(self):
         for entity in self.tableArray:
             if entity.name in self.difficultyDetectionDict:
@@ -2243,31 +2236,14 @@ def main():
     parserInstance.readCombatShallow(path)
     table = parserInstance.createFrontPageTable()
     print(table)
-    parserInstance.readCombatFull(path)
-    table = parserInstance.createFrontPageTable()
-    # parserInstance.generalStatsCopy()
-    # table = parser.tableArray[parser.playerdict["WarpCoreBreach"]]
-    print(table)
 
+    for player in parserInstance.tableArray:
+        if player.isPlayer:
+            graph = parserInstance.getStatsCopy("ATKS-in", player.name)
+            print(graph)
+    for row in table:
+        print(row)
 
-    # print(parserInstance.otherCombats)
-    # for player in parserInstance.tableArray:
-    #     if player.isPlayer:
-    #         graph = parserInstance.getStatsCopy("ATKS-in", player.name)
-    #         print(graph)
-    # for row in table:
-    #     print(row)
-    # parser2 = parser()
-    # parser2.readCombatFromTempfile(parserInstance.otherCombats[0])
-    #
-    #
-    # for player in parser2.tableArray:
-    #     if player.isPlayer:
-    #         graph = parser2.getStatsCopy("ATKS-in", player.name)
-    #         print(graph)
-    # for row in table:
-    #     print(row)
-    #
 
 
 
