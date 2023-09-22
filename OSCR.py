@@ -78,9 +78,8 @@ class players:  # main container class, used for saving stats on all entities
 
     def updateStats(self, time2, midParseUpdate=True):
         self.temptotalAttacks = self.totalAttacks - self.misses
-        if midParseUpdate:
-            self.totalTime = (time2 - self.startTime).total_seconds()
-            self.runtime = self.totalTime
+        self.totalTime = (time2 - self.startTime).total_seconds()
+        self.runtime = self.totalTime
         self.endTime = time2
         if self.totalTime > 0 and self.totalHeals > 0:
             self.HPS = self.totalHeals / self.totalTime
@@ -116,6 +115,7 @@ class players:  # main container class, used for saving stats on all entities
         self.combatTime = self.runtime
         if self.combatTime < 1:
             self.combatTime = 1
+            self.runtime = 1
         for rows in self.dmgoutTable:
             for col in rows:
                 self.tmpDamage = col[self.dmgoutindex["damage"]]
@@ -2233,7 +2233,7 @@ def main():
     parserInstance = parser()
     parserInstance.setPath(path)
     # parserInstance.realTimeParser()
-    parserInstance.readCombatShallow(path)
+    parserInstance.readCombatFull(path)
     table = parserInstance.createFrontPageTable()
     print(table)
 
