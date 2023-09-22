@@ -589,6 +589,8 @@ class parser:
             if self.damage1 > self.attacker.maxOneHeal:
                 self.attacker.maxOneHeal = self.damage1
         else:
+            if self.damage1 < 0:
+                self.damage1 *= -1
             self.damaged.totalDamageTaken += self.damage1
             self.damaged.totalAttacksTaken += 1
             self.attacker.totalAttacks += 1
@@ -1674,24 +1676,27 @@ class parser:
 
 
 
-            time = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
+            timer = self.timeToTimeAndDate(self.date)
             if self.lastGraphTime == None:
-                self.lastGraphTime = time
+                self.lastGraphTime = timer
             if not (self.damagetype == "Shield" and self.damage1 < 0 and self.damage2 >= 0) or not self.damagetype == "HitPoints":
+
                 if self.attacker.name in self.bufferedDamage:
+                    if self.damage1 < 0:
+                        self.damage1 *= -1
                     previousDamage = self.bufferedDamage[self.attacker.name]
                     damage = previousDamage + self.damage1
                     self.bufferedDamage.update({self.attacker.name: damage})
                 else:
                     self.bufferedDamage.update({self.attacker.name: self.damage1})
-            if (time - self.lastGraphTime) >= self.graphDelta:
+            if (timer - self.lastGraphTime) >= self.graphDelta:
                 for updatedPlayer in self.tableArray:
                     killedTime = updatedPlayer.timeKilled
                     if killedTime == None:
-                        killedTime = time
+                        killedTime = timer
                     temptime = self.deltaValue*250
-                    if (time - killedTime > datetime.timedelta(milliseconds=temptime)):
-                        updatedPlayer.updateStats(time)
+                    if (timer - killedTime < datetime.timedelta(milliseconds=temptime)):
+                        updatedPlayer.updateStats(timer)
                         if updatedPlayer.name in self.bufferedDamage:
                             bufferDamage = self.bufferedDamage[updatedPlayer.name]
                         else:
@@ -1712,8 +1717,7 @@ class parser:
                                 self.NPCDamageChart.update({updatedPlayer.name: [[self.deltaValue], [bufferDamage]]})
 
                 self.bufferedDamage = {}
-
-            self.lastGraphTime = time
+            self.lastGraphTime = timer
             self.globalCombatEnd = self.timeToTimeAndDate(x[self.combatlogDict["date"]])
 
 
@@ -2233,7 +2237,7 @@ def main():
     parserInstance = parser()
     parserInstance.setPath(path)
     # parserInstance.realTimeParser()
-    parserInstance.readCombatFull(path)
+    results = parserInstance.readCombatShallow(path)
     table = parserInstance.createFrontPageTable()
     print(table)
 
