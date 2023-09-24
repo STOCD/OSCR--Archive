@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QPixmap, QPainter, QIcon
 from PyQt6.QtCore import QRect, Qt, QSize
 from types import FunctionType, BuiltinFunctionType, MethodType
-from src.functions import resize_tree_table
+from src.lib import resize_tree_table
 
 FUNC = (FunctionType, BuiltinFunctionType, MethodType)
 
@@ -161,7 +161,7 @@ class WidgetBuilder():
                 sep_label.setSizePolicy(SMAXMIN)
                 layout.addWidget(sep_label)
         
-        if ret: return layout, tuple(button_list)
+        if ret: return layout, button_list
         else: return layout
             
     def create_analysis_table(self, parent, widget):
@@ -249,11 +249,6 @@ class FlipButton(QPushButton):
     def _f(self):
         return
 
-    
-
-
-
-
 class BannerLabel(QWidget):
     def __init__(self, path, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -269,8 +264,8 @@ class BannerLabel(QWidget):
         if not self.p.isNull():
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            w = self.rect().width()
-            h = w * 126/2880
+            w = int(self.rect().width())
+            h = int(w * 126/2880)
             rect = QRect(0, 0, w, h)
             painter.drawPixmap(rect, self.p)
             self.setMaximumHeight(h)

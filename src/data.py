@@ -4,12 +4,14 @@ from PyQt6.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 from operator import itemgetter
 import os
+from multiprocessing import Pipe, Process
 import json
 import numpy as np
-from src.functions import clean_player_id, filtered_ability, resize_tree_table
+from src.lib import clean_player_id, filtered_ability, resize_tree_table
 from src.ui.widgets import ARIGHT, ACENTER, AVCENTER
+import time
 
-HEADER_CONVERSION = {
+TABLE_HEADER_CONVERSION = {
     'combatTime': 'Combat Time',
     'DPS': 'DPS',
     'Total Damage': 'Total Damage',
@@ -20,9 +22,26 @@ HEADER_CONVERSION = {
     '%damage taken': 'Taken Damage Share', # %
     '%atks-in': 'Attacks-in Share', # %
     'total heals': 'Total Heals',
+    'healCrtH': 'Heal Crit Chance', # %
     '% healed': 'Heals Share', # %
     'deaths': 'Deaths'
 }
+
+DAMAGE_HEADER = ['', 'Damage', 'DPS', 'Max One Hit', 'Crits', 'Flanks', 'Attacks', 'Misses', 'Crit Chance',
+        'Accuracy', 'Flank Rate', 'Kills', 'Hull Damage', 'Shield Damage', 'Resistance', 'Hull Attacks',
+        'Final Resistance']
+
+HEAL_INDEX = []
+
+def analysis_parser(path, pipe, lock):
+        """
+        Retrieves combat analysis data from parser
+        """
+        with lock:
+            parser = OSCR.parser()
+            parser.readCombatShallow(path)
+            uiD, dmgI, healI, uiID, _, _, _, _, _, npcdmg, npcdps = parser.readCombatFull(path)
+        pipe.send(uiD)
 
 class DataWrapper():
 
@@ -38,27 +57,53 @@ class DataWrapper():
         Uses OSCR.parser class to fetch combat data and stores it"""
 
         self.players = {}
-        self.overview_data = [[],[],[]]
+        self.overview_data = [[],[],[],[],[]]
+
+
+
+        if combat is None:
+            st = time.time()
+            with self.config['parser1_lock']:
+                self.parser = OSCR.parser()
+                other_combats, map, diff, dmg_data, dps_data, _, _ = self.parser.readCombatShallow(path)
+                front_page_data = self.parser.createFrontPageTable()
+            en = time.time()
+            print(f'get_data: {en-st}')
+            combats = [other_combats[j][1] for j in other_combats.keys()]
+            combats.reverse()
+            
+            """with open('shallow.json', 'w') as f:
+                json.dump([dps_data, dmg_data], f, skipkeys=True)
+            with open('shallow2.json', 'w') as f:
+                json.dump(front_page_data, f, skipkeys=True)"""
+
+        else:
+            with self.config['parser1_lock']:
+                _, map, diff, dmg_data, dps_data, _, _ = self.parser.readPreviousCombatShallow(combat)
+                front_page_data = self.parser.createFrontPageTable()
+        # ------------------------------------------------------------------------------------------
 
         # initial run / click on the Analyze button
-        if combat is None:
+        """if combat is None:
             self.parser = OSCR.parser()
             data, *data2 = self.parser.readCombatwithUITables(path)
             # data, *data2 = self.parser.readPreviousCombatwithUITables(0)
             combats = [self.parser.otherCombats[j][1] 
                     for j in self.parser.otherCombats.keys()]
-            combats.reverse()
+            combats.reverse()"""
 
         # subsequent run / click on older combat
-        else:
+        """else:
             data, *data2 = self.parser.readPreviousCombatwithUITables(combat)
-        raw_front_data = self.parser.createFrontPageTable()        
+        raw_front_data = self.parser.createFrontPageTable() """       
 
         # format Overview Table data
-        for line in raw_front_data[1:]:
+        for line in front_page_data[1:]:
             self.overview_data[0].append(line[1:])
             self.overview_data[2].append(line[0])
-        self.overview_data[1] = raw_front_data[0][1:]
+        self.overview_data[1] = front_page_data[0][1:]
+        self.overview_data[3] = dps_data
+        self.overview_data[4] = dmg_data
         # format Combat Analysis data
         """for key in data.keys():
             if key[0] == 'P':
@@ -74,11 +119,12 @@ class DataWrapper():
                 player_abilities = [line[1:] for line in abilities]
                 #self.format_analysis_table(player_abilities)
                 self.players[key] = (player_index, player_abilities)"""
-        self.main_data = data
-        self.misc_combat_data = data2
-        print(self.overview_data)
-        with open('data.json', 'w') as f:
-            json.dump(data, f)
+        #self.main_data = data
+        #self.misc_combat_data = data2
+        #print(self.overview_data)
+        """with open('data.json', 'w') as f:
+            json.dump(data, f)"""
+        print(time.time() - en)
         if combat is None:
             return combats
         # update map name and difficulty
@@ -89,6 +135,17 @@ class DataWrapper():
             json.dump(self.misc_combat_data[6], fil)
         with open('data2.json', 'w') as fil:
             json.dump(self.misc_combat_data[7], fil)"""
+
+    def get_analysis_data(self, path):
+        """
+        """
+        receiver, sender = Pipe()
+        analysis_process = Process(target=analysis_parser, args=(path, sender, self.config['parser1_lock']))
+        analysis_process.start()
+        data = receiver.recv()
+        self.main_data = data
+        self.populate_analysis()
+        self.widgets['main_menu_buttons'][1].setDisabled(False)
 
     def format_data(self, el, integer=False):
         """rounds floats and ints to 2 decimals and sets 1000s seperators, 
@@ -113,11 +170,7 @@ class DataWrapper():
         Populates the Analysis' treeview table.
         """
         table = self.widgets['analysis_table']
-        header = ['', 'Damage', 'DPS', 'Max One Hit', 'Crits', 'Flanks', 
-                'Attacks', 'Misses', 'CrtH', 'Accuracy', 'Flank Rate', 'Kills', 
-                'Hull Damage', 'Shield Damage', 'Resistance', 'Hull Attacks', 
-                'Final Resist']
-        model = TreeModel(self.main_data, header, self.theme_font('tree_table_header'),
+        model = TreeModel(self.main_data, DAMAGE_HEADER, self.theme_font('tree_table_header'),
                 self.theme_font('tree_table'),
                 self.theme_font('', self.theme['tree_table']['::item']['font']))
         table.setModel(model)
@@ -137,9 +190,9 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             current_col = index.column()
             cell = self._data[index.row()][current_col]
-            if isinstance(cell, (float, int)) and current_col != 11:
+            if isinstance(cell, (float, int)) and current_col != 12:
                 disp = f'{cell:,.2f}'
-                if index.column() in (3, 5, 6, 7, 8, 10):
+                if index.column() in (3, 5, 6, 7, 8, 10, 11):
                     disp += '%'
             else:
                 disp = cell
@@ -161,7 +214,7 @@ class TableModel(QAbstractTableModel):
         # section is the index of the column/row.
         if role == Qt.ItemDataRole.DisplayRole:
             if orientation == Qt.Orientation.Horizontal:
-                return HEADER_CONVERSION[self._header[section]]
+                return TABLE_HEADER_CONVERSION[self._header[section]]
 
             if orientation == Qt.Orientation.Vertical:
                 return self._index[section]
@@ -228,6 +281,8 @@ class TreeModel(QStandardItemModel):
         r = super().data(index, role)
         if role == Qt.ItemDataRole.DisplayRole:
             if isinstance(r, float):
+                if index.column() in (8, 9, 10):
+                    return f'{r:,.2f}%'
                 return f'{r:,.2f}'
             return r
         elif role == Qt.ItemDataRole.FontRole:
@@ -248,21 +303,31 @@ class TreeModel(QStandardItemModel):
             if not player.startswith('P'):
                 continue
             current_player = self.to_standard_item([clean_player_id(player)]+['0']*16)
+            pet_sum = None
             if isinstance(stats[1], list):
                 for ability in stats[1]:
-                    self.insert_ability(ability, current_player[0])
+                    if ability[0][0] == 'Pets (sum)':
+                        pet_sum = self.insert_ability(ability, current_player[0])
+                    else:
+                        self.insert_ability(ability, current_player[0])
                 self._root.appendRow(current_player)
+            if isinstance(stats[2], list):
+                for pet_ability in stats[2]:
+                    self.insert_ability(pet_ability, pet_sum)
 
     def insert_ability(self, ability:list, parent:StandardItem):
         """
         Recursively adds an ability and its sub-abilites to parent
         """
-        global_  = self.to_standard_item(filtered_ability(ability[0], 1))
+        global_  = self.to_standard_item(filtered_ability(ability[0], (1,)))
+        if ability[0][0] == 'Pets (sum)':
+            parent.appendRow(global_)
+            return global_[0]
         for line in ability[1:]:
             if len(line) > 0 and isinstance(line[0], list):
                 self.insert_ability(line, global_[0])
             elif len(line) > 0 and isinstance(line[0], str):
-                global_[0].appendRow(self.to_standard_item(filtered_ability(line, 0)))
+                global_[0].appendRow(self.to_standard_item(filtered_ability(line, (0,))))
         parent.appendRow(global_)
 
 

@@ -1,4 +1,5 @@
 from re import sub as re_sub
+from PyQt6.QtCore import QThread, pyqtSignal
 def clean_player_id(id:str) -> str:
     """
     cleans player id and returns handle
@@ -11,13 +12,13 @@ def clean_entity_id(id:str) -> str:
     """
     return re_sub(r'C\[([0-9]+) +?([a-zA-Z_0-9]+)\]', r'\2 \1', id).replace('_', ' ')
 
-def filtered_ability(list: list, index: int):
+def filtered_ability(list: list, index):
     """
-    Generator that returns all items of list except the item at index.
+    Generator that returns all items of list except the item in index.
     Also cleans entity ids and ability names.
     """
     for ix, item in enumerate(list):
-        if ix != index:
+        if ix not in index:
             if ix == 0 or ix == 1:
                 try:
                     if item.startswith('C['):
@@ -49,3 +50,18 @@ def resize_tree_table(tree):
     for col in range(tree.header().count()):
         width = max(tree.sizeHintForColumn(col), tree.header().sectionSizeHint(col)) + 5
         tree.header().resizeSection(col, width)
+
+
+class CustomThread(QThread):
+    """
+    Subclass of QThread able to execute an arbitrary function in a seperate thread.
+    """
+    result = pyqtSignal(tuple)
+
+    def __init__(self, parent, func) -> None:
+        self._func = func
+        super().__init__(parent)
+
+    def run(self):
+        r = self._func()
+        self.result.emit(tuple([r]))

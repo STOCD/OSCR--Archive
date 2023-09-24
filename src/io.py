@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import json
 from PyQt6.QtWidgets import QFileDialog, QMessageBox
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtCore import Qt
@@ -102,3 +103,25 @@ def show_warning(self, title, message):
     error.setStandardButtons(QMessageBox.StandardButton.Ok)
     error.setWindowIcon(QIcon(get_asset_path(self, 'oscr_icon_small.png')))
     error.exec()
+
+def fetch_json(self, path):
+    """
+    Fetches json from path and returns dictionary.
+    """
+    if not (os.path.exists(path) and os.path.isfile(path) and os.path.isabs(path)):
+        raise FileNotFoundError('Invalid Path')
+    with open(path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    return data
+
+def store_json(self, data, path):
+    """
+    Stores data to json file at path.
+    """
+    if not os.path.isabs(path):
+        return
+    try:
+        with open(path, 'w') as file:
+            json.dump(data, file)
+    except OSError as e:
+        sys.stdout.write(f'Settings could not be saved: {e}')

@@ -8,13 +8,14 @@ from src.ui.widgets import BannerLabel, WidgetBuilder, FlipButton
 from src.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
 from src.data import DataWrapper
 from src.ui.plot import PlotWrapper
+from src.lib import CustomThread
 import os
-import copy
+import time
 
 class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
     from src.ui.styles import get_style, get_css, get_style_class, create_style_sheet
-    from src.io import get_asset_path, browse_path
+    from src.io import get_asset_path, browse_path, store_json
 
     def __init__(self, path) -> None:
         """
@@ -88,8 +89,8 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         head = self.create_label('STO Combatlog:', 'label', frame)
         left_layout.addWidget(head, alignment=ALEFT)
 
-        self.entry = QLineEdit(self.settings['base_path'], frame)
-        self.entry.setFixedWidth(self.settings['sidebar_item_width'])
+        self.entry = QLineEdit(self.settings['log_path'], frame)
+        self.entry.setFixedWidth(self.config['sidebar_item_width'])
         self.entry.setStyleSheet(self.get_style_class('QLineEdit', 'entry'))
         self.entry.setSizePolicy(SMAXMAX)
         left_layout.addWidget(self.entry)
@@ -118,7 +119,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.current_combats.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
         self.current_combats.setFont(self.theme_font('listbox'))
         self.current_combats.setSizePolicy(SMAXMIN)
-        self.current_combats.setFixedWidth(self.settings['sidebar_item_width'])
+        self.current_combats.setFixedWidth(self.config['sidebar_item_width'])
         background_layout.addWidget(self.current_combats)
         left_layout.addWidget(background_frame, stretch=1)
         
@@ -149,6 +150,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.widgets['main_menu_buttons'][0].clicked.connect(lambda: main_tabber.setCurrentIndex(0))
         self.widgets['main_menu_buttons'][1].clicked.connect(lambda: main_tabber.setCurrentIndex(1))
         self.widgets['main_menu_buttons'][2].clicked.connect(lambda: main_tabber.setCurrentIndex(2))
+        self.widgets['main_menu_buttons'][2].setDisabled(True)
         self.widgets['main_menu_buttons'][3].clicked.connect(lambda: main_tabber.setCurrentIndex(3))
         self.widgets['main_tab_frames'].append(o_frame)
         self.widgets['main_tab_frames'].append(a_frame)
@@ -187,10 +189,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
             'DPS Graph': {'callback': lambda: o_tabber.setCurrentIndex(1), 'align':ACENTER},
             'Damage Graph': {'callback': lambda: o_tabber.setCurrentIndex(2), 'align':ACENTER}
         }
-        switches = self.create_button_series(switch_frame, switch_style, 'button')
-        switches.setContentsMargins(0, self.theme['defaults']['margin'], 0, 0)
-        switch_frame.setLayout(switches)
+        switcher, buttons = self.create_button_series(switch_frame, switch_style, 'button', ret=True)
+        switcher.setContentsMargins(0, self.theme['defaults']['margin'], 0, 0)
+        self.widgets['overview_menu_buttons'] = buttons
+        switch_frame.setLayout(switcher)
         o_frame.setLayout(layout)
+        self.widgets['overview_tabber'] = o_tabber
 
     def setup_analysis_frame(self):
         """
@@ -283,7 +287,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         if current_path != '':
             path = self.browse_path(os.path.dirname(current_path), 'Logfile (*.log);;Any File (*.*)')
             if path != '':
-                entry.setText(path)
+                entry.setText(self.format_path(path))
 
     def analyze_log_callback(self, combat_id=None, path=None):
         """wrapper function for retrieving and showing data"""
@@ -292,17 +296,24 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
             if not path or not os.path.isfile(path):
                 self.show_warning('Invalid Logfile', 'The Logfile you are trying to open does not exist.')
                 return
+            if path != self.settings['log_path']:
+                self.settings['log_path'] = path
+                self.store_json(self.settings, self.config['settings_path'])
+
             combats = self.get_data(combat=None, path=path)
             self.current_combats.clear()
             self.current_combats.addItems(combats)
             self.current_combats.setCurrentRow(0)
             self.current_combat_id = 0
-            
+            self.widgets['main_menu_buttons'][1].setDisabled(True)
             self.create_overview()
+
+            analysis_thread = CustomThread(self.window, lambda: self.get_analysis_data(path))
+            analysis_thread.start()
         # subsequent run / click on older combat
         elif isinstance(combat_id, int) and combat_id != self.current_combat_id: 
             self.get_data(combat_id)
             self.create_overview()
             self.current_combat_id = combat_id
-        
-        self.populate_analysis()
+        self.widgets['overview_tabber'].setCurrentIndex(0)
+        #self.populate_analysis()
