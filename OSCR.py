@@ -116,6 +116,10 @@ class players:  # main container class, used for saving stats on all entities
         if self.combatTime < 1:
             self.combatTime = 1
             self.runtime = 1
+        self.dmgoutTable[0] = [self.name, "global", self.totaldamage, 0, self.maxOneHit, self.totalCrits, self.flanks,
+                               self.totalAttacks, self.misses, 0, 0, 0, self.kills, self.hulllDamage, self.shieldDamage,
+                               self.resist, self.hullAttacks, 0]
+
         for rows in self.dmgoutTable:
             for col in rows:
                 self.tmpDamage = col[self.dmgoutindex["damage"]]
@@ -493,16 +497,19 @@ class parser:
     def createTableInstanceAlternate(self, isPlayer):
         self.tableArray.append(players(self.targetID, isPlayer, self.timeToTimeAndDate(self.date)))
         self.playerdict.update({self.targetID: self.counter2})
+        self.tableArray[self.counter2].dmgOutTable.append([])
         self.counter2 += 1
 
     def createTableInstance(self):  # creates a new class instance and appends to list
         if self.isPlayer:
             self.tableArray.append(players(self.ID, True, self.timeToTimeAndDate(self.date)))
             self.playerdict.update({self.ID: self.counter2})
+            self.tableArray[self.counter2].dmgOutTable.append([])
             self.counter2 += 1
         else:
             self.tableArray.append(players(self.ID, False, self.timeToTimeAndDate(self.date)))
             self.playerdict.update({self.ID: self.counter2})
+            self.tableArray[self.counter2].dmgOutTable.append([])
             self.counter2 += 1
 
     def getGlobalTime(self):
