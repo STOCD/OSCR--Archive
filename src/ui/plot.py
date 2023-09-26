@@ -1,14 +1,13 @@
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import Axes
-from matplotlib.container import BarContainer
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from PyQt6.QtWidgets import QVBoxLayout, QWidget, QTableView, QAbstractItemView, QHeaderView
-from PyQt6.QtCore import QSortFilterProxyModel
+from PyQt6.QtWidgets import QVBoxLayout, QWidget, QTableView
 import numpy as np
-from src.data import TableModel, SortingProxy, TreeModel
-from src.ui.widgets import SMINMIN, ACENTER, RFIXED, SMPIXEL
-from src.functions import clean_player_id
 
+from src.data import TableModel, SortingProxy
+from src.ui.widgets import SMINMIN, RFIXED, SMPIXEL
+from src.lib import clean_player_id, CustomThread
 
 class PlotWrapper():
 
@@ -21,12 +20,9 @@ class PlotWrapper():
         return
 
     def create_overview(self):
-        """creates the main Parse Overview including graphs and table"""
-
-        """for current_frame in [self.dps_bar_frame, self.overview_table_frame, 
-                self.dps_graph_frame, self.dmg_graph_frame]:
-            self.clear_frame(current_frame)"""
-
+        """
+        creates the main Parse Overview including graphs and table
+        """
         # clear graph frames
         for frame in self.widgets['overview_tab_frames']:
             if frame.layout():
@@ -38,89 +34,103 @@ class PlotWrapper():
         self.widgets['overview_graphs'] = []
 
         # DPS Bar Graph
+        l = self.create_overview_bars()
+        # DPS Graph
+        self.create_overview_dps()
+        # DMG Bars
+        self.widgets['overview_menu_buttons'][2].setDisabled(True)
+        dmg_thread = CustomThread(self.window, self.create_overview_dmg)
+        dmg_thread.result.connect(self.slot_overview_dmg)
+        dmg_thread.start()
+
+        # Overview Table
+        tbl = self.create_overview_table()
+        l.addWidget(tbl, stretch=4)
+
+    def create_overview_dmg(self) -> Figure:
+        """
+        Adds data to matplotlib bar chart.
+
+        :return: matplotlib figure with inserted data
+        """
+        with plt.style.context(self.config['plot_stylesheet_path']):
+            f, a = self.create_grouped_bar_plot(self.overview_data[4])
+            a.legend(loc='upper center', bbox_to_anchor=(0.5, -0.025), ncol=3, frameon=False)
+            a.set_xlabel('[s]', loc='right')
+        return f
+
+    def slot_overview_dmg(self, result):
+        """
+        Inserts the figure into the UI
+
+        Parameters:
+        - :param result: tuple containing the matplotlib figure to be inserted
+        """
+        figure = result[0]
+        self.widgets['overview_graphs'].append(figure)
+        dmg_chart = FigureCanvasQTAgg(figure)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(dmg_chart)
+        self.widgets['overview_tab_frames'][2].setLayout(layout)
+        self.widgets['overview_menu_buttons'][2].setDisabled(False)
+
+    def create_overview_dps(self):
+        """
+        Adds data to matplotlib graph chart and inserts the figure into the UI.
+        """
+        with plt.style.context(self.config['plot_stylesheet_path']):
+            f, a = plt.subplots()
+            for player, array in self.overview_data[3].items():
+                a.plot(np.divide(array[0], 1000), array[1], 
+                        label=clean_player_id(player))
+            a.legend(loc='upper center', bbox_to_anchor=(0.5, -0.025), ncol=3, frameon=False)
+            a.set_xlabel('[s]', loc='right')
+        
+        self.widgets['overview_graphs'].append(f)
+        dps_chart = FigureCanvasQTAgg(f)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(dps_chart)
+        self.widgets['overview_tab_frames'][1].setLayout(layout)
+
+    def create_overview_bars(self) -> QVBoxLayout:
+        """
+        Adds data to matplotlib horizontal bar chart and inserts the figure into the UI.
+
+        :return: layout with inserted figure
+        """
         dps = self.get_overview_dps()
         players = self.overview_data[2]
         y = np.arange(len(players))
         lbs = self.format_bar_labels(dps)
-        with plt.style.context(self.settings['plot_stylesheet_path']):
+        with plt.style.context(self.config['plot_stylesheet_path']):
             f, a = plt.subplots()
             bars = a.barh(y, dps, align='center', color=self.theme['defaults']['mfg'])
             a.set_yticks(y, labels=players)
             self.create_bar_labels(a, bars, y, lbs, dps)
-            """bars = [a.barh(players[j], dps[j], 
-                    color=self.theme['defaults']['mfg']) for j in range(len(dps))]
-            for i, bar in enumerate(bars):
-                self.create_bar_label(bar, a, dps, dps[i], lbs[i], i)"""
-            #f.set_figwidth(int(self.windowWidth*0.075))
+        
         self.widgets['overview_graphs'].append(f)
         chart = FigureCanvasQTAgg(f)
-        l = QVBoxLayout()
-        l.setContentsMargins(0, 0, 0, 0)
-        l.addWidget(chart, stretch=11)
-        self.widgets['overview_tab_frames'][0].setLayout(l)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(chart, stretch=11)
+        self.widgets['overview_tab_frames'][0].setLayout(layout)
 
-        # DPS Graph
-        with plt.style.context(self.settings['plot_stylesheet_path']):
-            f, a = plt.subplots()
-            for player, array in self.misc_combat_data[7].items():
-                a.plot(np.divide(array[0], 1000), array[1], 
-                        label=clean_player_id(player))
-            a.legend()
-        self.widgets['overview_graphs'].append(f)
-        chart2 = FigureCanvasQTAgg(f)
-        l2 = QVBoxLayout()
-        l2.setContentsMargins(0, 0, 0, 0)
-        l2.addWidget(chart2)
-        self.widgets['overview_tab_frames'][1].setLayout(l2)
-            #f.set_figwidth(int(self.windowWidth*0.075))
-        
-        # DMG Bars
-        with plt.style.context(self.settings['plot_stylesheet_path']):
-            f, a = self.create_grouped_bar_plot(self.misc_combat_data[6])
-            a.legend()
-            #f, a = plt.subplots()
-            #f.add_axes(ax)
-            """for player, array in self.misc_combat_data[6].items():
-                a.bar(np.divide(array[0], 1000), array[1], 
-                        label=self.clean_player_id(player), width=0.1)"""
-            #a.legend()
-            #f.set_figwidth(int(self.windowWidth*0.075))
-        self.widgets['overview_graphs'].append(f)
-        chart3 = FigureCanvasQTAgg(f)
-        l3 = QVBoxLayout()
-        l3.setContentsMargins(0, 0, 0, 0)
-        l3.addWidget(chart3)
-        self.widgets['overview_tab_frames'][2].setLayout(l3)
-        # Overview Table
-
-        tbl = self.create_overview_table()
-        l.addWidget(tbl, stretch=4)
-        """self.format_table(self.overview_data[0])
-
-        overview_table = self.create_table(self.overview_table_frame, 
-                *self.overview_data, overview=True)
-        overview_table.grid(row=0, column=0, sticky='nsew')
-        overview_table.grid_propagate(False)
-        table_height = overview_table.get_row_heights()[0] * 6.75
-        overview_table.configure(height=table_height)"""
-
-    def create_bar_label(self, bar, axis: Axes , data, current, label, n):
-        """Add label to bar"""
-        # label on the bottom of the bar
-        if current > max(data)/10:
-            color = '#1a1a1a'
-            axis.text(max(data)/100,n-.08,label,color=color,
-                    fontweight='bold', 
-                    fontsize=13)
-        # label on the edge of the bar
-        else:
-            color = '#eeeeee'
-            axis.bar_label(bar, labels=[label], label_type='edge', 
-                    fontweight='bold', 
-                    fontsize=13, color=color, 
-                    padding=5)
+        return layout
     
     def create_bar_labels(self, axis: Axes, bars, y, names, x):
+        """
+        Adds bar labels to horizontal bar chart. Labels are placed inside the bar left-aligned by default.
+        Bars smaller than 10% of the widest bar are labeled outside of the bar aligned to its right edge.
+
+        Parameters:
+        - :param axis: Axes -> the plot containing the bars
+        - :param bars: BarContainer -> contains the bars themselves
+        - :param y: iterable of positions on the vertical axis where labels are added
+        - :param names: iterable of the label texts
+        - :param x: iterable of the width of the bars
+        """
         x_thre = max(x)//10
         x_pos = max(x)//100
         labels = []
@@ -139,25 +149,29 @@ class PlotWrapper():
         labels = []
         for v in values:
             if v > 1000000:
-                v = round(v/1000000, 2)
-                labels.append(f'{v} M')
+                labels.append(f'{v/1000000:.2f} M')
             elif v > 1000:
-                v = round(v/1000, 2)
-                labels.append(f'{v} k')
+                labels.append(f'{v/1000:.2f} k')
             else:
-                v = round(v, 2)
-                labels.append(str(v))
+                labels.append(f'{v:.2f}')
         return labels
 
     def get_overview_dps(self):
         """
         Retrieves DPS values from self.overview_data
+
+        :return: 
         """
         return np.array([el[1] for el in self.overview_data[0]])
 
-    def create_grouped_bar_plot(self, data):
+    def create_grouped_bar_plot(self, data: dict) -> tuple[Figure, Axes]:
         """
-        Creates a bar plot with grouped bars and returns figure and axis
+        Creates a bar plot with grouped bars and returns figure and axis.
+
+        Parameters:
+        - :param data: dictionary contining multiple sets of data
+
+        :return: Figure and Axes with inserted data
         """
         f, a = plt.subplots()
         group_width = 0.18 # distance between data points
@@ -170,11 +184,13 @@ class PlotWrapper():
             a.bar(x, ar[1], label=clean_player_id(player), width=wd)
         return f, a
 
-    def create_overview_table(self):
+    def create_overview_table(self) -> QTableView:
         """
-        Creates the overview table
+        Creates the overview table and returns it.
+
+        :return: Overview Table
         """
-        model = TableModel(*self.overview_data, 
+        model = TableModel(*self.overview_data[0:3],
                 header_font=self.theme_font('table_header'), cell_font=self.theme_font('table'))
         sort = SortingProxy()
         sort.setSourceModel(model)

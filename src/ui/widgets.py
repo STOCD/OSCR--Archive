@@ -1,9 +1,12 @@
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QPushButton, QFrame, QLabel, QTreeView, QHeaderView, QAbstractItemView
+from types import FunctionType, BuiltinFunctionType, MethodType
+
+from PyQt6.QtWidgets import QWidget,  QPushButton, QFrame, QLabel, QTreeView, QHeaderView
+from PyQt6.QtWidgets import QSizePolicy, QAbstractItemView
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QPixmap, QPainter, QIcon
 from PyQt6.QtCore import QRect, Qt, QSize
-from types import FunctionType, BuiltinFunctionType, MethodType
-from src.functions import resize_tree_table
+
+from src.lib import resize_tree_table
 
 FUNC = (FunctionType, BuiltinFunctionType, MethodType)
 
@@ -161,12 +164,18 @@ class WidgetBuilder():
                 sep_label.setSizePolicy(SMAXMIN)
                 layout.addWidget(sep_label)
         
-        if ret: return layout, tuple(button_list)
+        if ret: return layout, button_list
         else: return layout
             
-    def create_analysis_table(self, parent, widget):
+    def create_analysis_table(self, parent, widget) -> QTreeView:
         """
-        Creates and returns a QTreeView with parent, styled according to widget
+        Creates and returns a QTreeView with parent, styled according to widget.
+
+        Parameters:
+        - :param parent: parent of the table
+        - :param widget: style key for the table
+
+        :return: configured QTreeView
         """
         table = QTreeView(parent)
         table.setStyleSheet(self.get_style_class('QTreeView', widget))
@@ -176,7 +185,7 @@ class WidgetBuilder():
         table.setVerticalScrollMode(SMPIXEL)
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.header().setStyleSheet(self.get_style_class('QHeaderView', 'tree_table_header'))
         table.header().setSectionResizeMode(RFIXED)
         table.header().setSectionsMovable(False)
@@ -249,12 +258,10 @@ class FlipButton(QPushButton):
     def _f(self):
         return
 
-    
-
-
-
-
 class BannerLabel(QWidget):
+    """
+    Label displaying image that resizes according to its parents width while preserving aspect ratio.
+    """
     def __init__(self, path, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.setPixmap(QPixmap(path))

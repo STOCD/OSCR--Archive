@@ -1,9 +1,10 @@
 import os
 import sys
 import re
+import json
+
 from PyQt6.QtWidgets import QFileDialog, QMessageBox
-from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 
 def get_asset_path(self, asset_name) -> str:
     """
@@ -61,11 +62,9 @@ def sanitize_file_name(self, txt, chr_set='extended') -> str:
     result = ''.join(x if x in white_list else FILLER for x in txt)
 
     # Step 2: Device names, '.', and '..' are invalid filenames in Windows.
-    DEVICE_NAMES = 'CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,' \
-                    'COM5,COM6,COM7,COM8,COM9,LPT1,LPT2,' \
-                    'LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,' \
-                    'CONIN$,CONOUT$,..,.'.split()  # This list is an O(n) operation.
-    DEVICE_NAMES = ('CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9', 'CONIN$', 'CONOUT$', '..', '.')
+    DEVICE_NAMES = ('CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7',
+            'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9', 'CONIN$',
+            'CONOUT$', '..', '.')
     if '.' in txt:
         name, _, ext = result.rpartition('.')
         ext = f'.{ext}'
@@ -102,3 +101,25 @@ def show_warning(self, title, message):
     error.setStandardButtons(QMessageBox.StandardButton.Ok)
     error.setWindowIcon(QIcon(get_asset_path(self, 'oscr_icon_small.png')))
     error.exec()
+
+def fetch_json(self, path):
+    """
+    Fetches json from path and returns dictionary.
+    """
+    if not (os.path.exists(path) and os.path.isfile(path) and os.path.isabs(path)):
+        raise FileNotFoundError('Invalid Path')
+    with open(path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    return data
+
+def store_json(self, data, path):
+    """
+    Stores data to json file at path.
+    """
+    if not os.path.isabs(path):
+        return
+    try:
+        with open(path, 'w') as file:
+            json.dump(data, file)
+    except OSError as e:
+        sys.stdout.write(f'Settings could not be saved: {e}')

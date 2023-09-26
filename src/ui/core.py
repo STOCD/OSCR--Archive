@@ -1,19 +1,18 @@
+import os
+
 from PyQt6.QtWidgets import QApplication, QWidget, QLineEdit, QFrame, QListWidget, QTabWidget
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QAbstractItemView
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QFont, QFontDatabase
-from PyQt6.QtCore import Qt, QRect, QSize
-from PyQt6.QtSvgWidgets import QSvgWidget
-from PyQt6.QtSvg import QSvgRenderer
+from PyQt6.QtWidgets import QVBoxLayout, QGridLayout
+from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import QSize
+
 from src.ui.widgets import BannerLabel, WidgetBuilder, FlipButton
 from src.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
-from src.data import DataWrapper
 from src.ui.plot import PlotWrapper
-import os
-import copy
+from src.data import DataWrapper
 
 class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
-    from src.ui.styles import get_style, get_css, get_style_class, create_style_sheet
+    from src.ui.styles import get_style_class, create_style_sheet
     from src.io import get_asset_path, browse_path
 
     def __init__(self, path) -> None:
@@ -22,7 +21,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         """
         return
 
-    def create_main_window(self, argv=[]):
+    def create_main_window(self, argv=[]) -> tuple[QApplication, QWidget]:
+        """
+        Creates and initializes main window.
+
+        :return: QApplication, QWidget
+        """
         app = QApplication(argv)
         app.setStyleSheet(self.create_style_sheet(self.theme['app']['style']))
         window = QWidget()
@@ -34,6 +38,9 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         return app, window
 
     def setup_main_layout(self):
+        """
+        Sets up the main layout of the app.
+        """
         layout, main_frame = self.create_master_layout(self.window)
         self.window.setLayout(layout)
 
@@ -79,6 +86,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.setup_analysis_frame()
 
     def setup_left_sidebar(self, frame:QFrame):
+        """
+        Sets up the sidebar used to select parses and combats
+
+        Parameters:
+        - :param frame: QFrame -> parent frame of the sidebar
+        """
         left_layout = QVBoxLayout()
         m = self.theme['defaults']['margin']
         left_layout.setContentsMargins(m, m, m, m)
@@ -88,8 +101,8 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         head = self.create_label('STO Combatlog:', 'label', frame)
         left_layout.addWidget(head, alignment=ALEFT)
 
-        self.entry = QLineEdit(self.settings['base_path'], frame)
-        self.entry.setFixedWidth(self.settings['sidebar_item_width'])
+        self.entry = QLineEdit(self.settings['log_path'], frame)
+        self.entry.setFixedWidth(self.config['sidebar_item_width'])
         self.entry.setStyleSheet(self.get_style_class('QLineEdit', 'entry'))
         self.entry.setSizePolicy(SMAXMAX)
         left_layout.addWidget(self.entry)
@@ -118,22 +131,26 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.current_combats.setStyleSheet(self.get_style_class('QListWidget', 'listbox'))
         self.current_combats.setFont(self.theme_font('listbox'))
         self.current_combats.setSizePolicy(SMAXMIN)
-        self.current_combats.setFixedWidth(self.settings['sidebar_item_width'])
+        self.current_combats.setFixedWidth(self.config['sidebar_item_width'])
         background_layout.addWidget(self.current_combats)
         left_layout.addWidget(background_frame, stretch=1)
         
-        refresh_button.clicked.connect(lambda: self.analyze_log_callback(self.current_combats.currentRow()))
+        #refresh_button.clicked.connect(lambda: self.analyze_log_callback(self.current_combats.currentRow()))
 
         frame.setLayout(left_layout)
 
     def setup_main_tabber(self, frame:QFrame):
         """
-        Sets up the tabber switching between Overview, Analysis, League and Settings
+        Sets up the tabber switching between Overview, Analysis, League and Settings.
+
+        Parameters:
+        - :param frame: QFrame -> parent frame of the sidebar
         """
         o_frame = self.create_frame(None, 'frame')
         a_frame = self.create_frame(None, 'frame')
         l_frame = self.create_frame(None, 'frame', {'background': 'pink'})
         s_frame = self.create_frame(None, 'frame', {'background': 'brown'})
+
         main_tabber = QTabWidget(frame)
         main_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
         main_tabber.tabBar().setStyleSheet(self.get_style_class('QTabBar', 'tabber_tab'))
@@ -142,10 +159,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         main_tabber.addTab(a_frame, 'A')
         main_tabber.addTab(l_frame, 'L')
         main_tabber.addTab(s_frame, 'S')
+
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(main_tabber)
         frame.setLayout(layout)
+
         self.widgets['main_menu_buttons'][0].clicked.connect(lambda: main_tabber.setCurrentIndex(0))
         self.widgets['main_menu_buttons'][1].clicked.connect(lambda: main_tabber.setCurrentIndex(1))
         self.widgets['main_menu_buttons'][2].clicked.connect(lambda: main_tabber.setCurrentIndex(2))
@@ -154,6 +173,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.widgets['main_tab_frames'].append(a_frame)
         self.widgets['main_tab_frames'].append(l_frame)
         self.widgets['main_tab_frames'].append(s_frame)
+        self.widgets['main_tabber'] = main_tabber
 
     def setup_overview_frame(self):
         """
@@ -187,10 +207,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
             'DPS Graph': {'callback': lambda: o_tabber.setCurrentIndex(1), 'align':ACENTER},
             'Damage Graph': {'callback': lambda: o_tabber.setCurrentIndex(2), 'align':ACENTER}
         }
-        switches = self.create_button_series(switch_frame, switch_style, 'button')
-        switches.setContentsMargins(0, self.theme['defaults']['margin'], 0, 0)
-        switch_frame.setLayout(switches)
+        switcher, buttons = self.create_button_series(switch_frame, switch_style, 'button', ret=True)
+        switcher.setContentsMargins(0, self.theme['defaults']['margin'], 0, 0)
+        self.widgets['overview_menu_buttons'] = buttons
+        switch_frame.setLayout(switcher)
         o_frame.setLayout(layout)
+        self.widgets['overview_tabber'] = o_tabber
 
     def setup_analysis_frame(self):
         """
@@ -210,7 +232,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         a_frame.setLayout(layout)
 
 
-    def create_master_layout(self, parent):
+    def create_master_layout(self, parent) -> tuple[QVBoxLayout, QFrame]:
         """
         Creates and returns the master layout for an OSCR window.
 
@@ -264,6 +286,8 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         Parameters:
         - :param pos: (tuple of two floats) -> relative position of the top left corner
         - :param size: (tuple of two floats) -> relative size of the window
+
+        :return: tuple of four int -> (x position..., y position..., width..., height...) ... of the window
         """
         rel_x, rel_y = pos
         rel_size_x, rel_size_y = size
@@ -278,31 +302,12 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
     def browse_log(self, entry:QLineEdit):
         """
         Callback for browse button.
+
+        Parameters:
+        - :param entry: QLineEdit -> path entry line widget
         """
         current_path = entry.text()
         if current_path != '':
             path = self.browse_path(os.path.dirname(current_path), 'Logfile (*.log);;Any File (*.*)')
             if path != '':
-                entry.setText(path)
-
-    def analyze_log_callback(self, combat_id=None, path=None):
-        """wrapper function for retrieving and showing data"""
-        # initial run / click on the Analyze button
-        if combat_id is None:
-            if not path or not os.path.isfile(path):
-                self.show_warning('Invalid Logfile', 'The Logfile you are trying to open does not exist.')
-                return
-            combats = self.get_data(combat=None, path=path)
-            self.current_combats.clear()
-            self.current_combats.addItems(combats)
-            self.current_combats.setCurrentRow(0)
-            self.current_combat_id = 0
-            
-            self.create_overview()
-        # subsequent run / click on older combat
-        elif isinstance(combat_id, int) and combat_id != self.current_combat_id: 
-            self.get_data(combat_id)
-            self.create_overview()
-            self.current_combat_id = combat_id
-        
-        self.populate_analysis()
+                entry.setText(self.format_path(path))

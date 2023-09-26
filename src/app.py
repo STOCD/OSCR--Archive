@@ -1,21 +1,27 @@
-from src.ui.core import OscrGui
+from multiprocessing import Lock
 import os
+import json
+import copy
+
+from src.ui.core import OscrGui
 
 
 class OpenSourceCombatlogReader(OscrGui):
 
-    from src.io import load_icon, format_path
+    from src.io import load_icon, format_path, fetch_json, store_json
 
     app_dir = None
 
-    settings = {
-        'sidebar_item_width': 0,
-        'plot_stylesheet_path': r'/src/ui/oscr_default.mplstyle',
-    }
+    config = {} # see main.py for contents
 
+    settings = {} # see main.py for defaults
+
+    # stores widgets that need to be accessed from outside their creating function
     widgets = {
         'main_menu_buttons': [],
-        'second_menu_buttons': [],
+        'overview_menu_buttons': [],
+        'main_tabber': None,
+        'overview_tabber': None,
         'main_tab_frames': [],
         'overview_tab_frames': [],
         'overview_graphs': [],
@@ -23,19 +29,33 @@ class OpenSourceCombatlogReader(OscrGui):
     }
     
     def __init__(self, version, theme, args, path, config) -> None:
+        """
+        Creates new Instance of OSCR.
+
+        Parameters:
+        - :param version: version of the app
+        - :param theme: dict -> default theme
+        - :param args: command line arguments
+        - :param path: absolute path to main.py file
+        - :param config: app configuration (!= settings these are not changed by the user)
+        """
         self.version = version
         self.theme = theme
         self.args = args
         self.app_dir = path
-        #config.update(self.settings)
-        #self.settings = config
+        self.config = config
         self.app, self.window = self.create_main_window()
+        self.init_config()
         self.init_settings()
         self.cache_assets()
         self.setup_main_layout()
-        self.attach_callbacks()
 
-    def run(self):
+    def run(self) -> int:
+        """
+        Runs the event loop.
+
+        :return: exit code of event loop
+        """
         return self.app.exec()
 
     def cache_assets(self):
@@ -51,15 +71,31 @@ class OpenSourceCombatlogReader(OscrGui):
 
     def init_settings(self):
         """
-        Prepares settings.
+        Prepares settings. Loads stored settings. Saves current settings for next startup.
         """
-        _, _, screen_width, _ = self.app.primaryScreen().availableGeometry().getRect()
-        self.settings['sidebar_item_width'] = int(self.theme['s.c']['sidebar_item_width'] * screen_width)
-        self.settings['base_path'] = self.format_path(self.app_dir)
-        style_path = rf"{self.app_dir}/{self.settings['plot_stylesheet_path']}"
-        self.settings['plot_stylesheet_path'] = os.path.normpath(os.path.abspath(style_path))
+        self.settings['log_path'] = self.format_path(self.app_dir)
+        try:
+            stored_settings = self.fetch_json(self.config['settings_path'])
+            self.settings = copy.copy(self.config['default_settings'])
+            self.settings.update(stored_settings)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.settings = copy.copy(self.config['default_settings'])
+        finally:
+            self.store_json(self.settings, self.config['settings_path'])
+        
 
-    def attach_callbacks(self):
+    def init_config(self):
         """
-        Attaches callbacks defined in this class to widgets
+        Prepares config.
         """
+        self.config['default_settings']['log_path'] = self.format_path(
+                self.config['default_settings']['log_path'])
+        _, _, screen_width, _ = self.app.primaryScreen().availableGeometry().getRect()
+        self.config['sidebar_item_width'] = int(self.theme['s.c']['sidebar_item_width'] * screen_width)
+        style_path = rf"{self.app_dir}/{self.config['plot_stylesheet_path']}"
+        self.config['plot_stylesheet_path'] = os.path.normpath(os.path.abspath(style_path))
+        settings_path = rf"{self.app_dir}/{self.config['settings_path']}"
+        self.config['settings_path'] = os.path.normpath(os.path.abspath(settings_path))
+        self.config['parser1_lock'] = Lock()
+        self.current_combat_id = -1
+        self.current_combat_path = ''

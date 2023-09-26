@@ -1,10 +1,12 @@
 import sys
 import os
+from multiprocessing import set_start_method, freeze_support
+
 from src.app import OpenSourceCombatlogReader
 
 class Launcher():
 
-    version = '2023.9a110'
+    version = '2023.9a260'
 
     # holds the style of the app
     theme = {
@@ -106,6 +108,9 @@ class Launcher():
                 'border-width': '@bw',
                 'border-style': 'solid',
                 'border-color': '@oscr'
+            },
+            ':disabled': {
+                'color': '@bc'
             }
         },
         # big button (main tab switcher)
@@ -124,6 +129,9 @@ class Launcher():
             ':hover': {
                 'text-decoration': 'underline',
                 'color': '@fg'
+            },
+            ':disabled': {
+                'color': '@bc'
             }
         },
         # inconspicious button
@@ -377,7 +385,13 @@ class Launcher():
     }
 
     config = {
-        'base_path': ''
+        'sidebar_item_width': 0,
+        'plot_stylesheet_path': r'/src/ui/oscr_default.mplstyle',
+        'settings_path': r'/src/.OSCR_settings.json',
+        'parser1_lock': None,
+        'default_settings': {
+            'log_path': '',
+        }
     }
 
     def __init__(self):
@@ -386,7 +400,7 @@ class Launcher():
         except Exception:
             self.base_path = os.path.abspath(os.path.dirname(__file__))
         sys.path.append(self.base_path)
-        self.config['base_path'] = self.base_path
+        self.config['default_settings']['log_path'] = self.base_path
         self.args = {}
 
     def launch(self):
@@ -394,4 +408,6 @@ class Launcher():
         sys.exit(c)
 
 if __name__ == '__main__':
+    set_start_method('spawn')
+    freeze_support()
     Launcher().launch()
