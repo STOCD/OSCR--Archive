@@ -7,7 +7,7 @@ from PyQt6.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 
 from src import OSCR
 from src.lib import clean_player_id, filtered_ability, resize_tree_table, get_entity_num, analysis_parser
-from src.lib import CustomThread
+from src.lib import CustomThread, StandardItem, std_item_generator
 from src.ui.widgets import ARIGHT, ACENTER, AVCENTER
 
 TABLE_HEADER_CONVERSION = {
@@ -226,29 +226,6 @@ class SortingProxy(QSortFilterProxyModel):
         r = self.sourceModel()._data[right.row()][right.column()]
         return l < r
 
-class StandardItem(QStandardItem):
-    """
-    Standard Item supporting str, int and float data types
-    """
-    def __init__(self, value):
-        if not isinstance(value, (str, int, float)):
-            raise TypeError(f'StandardItem only supports str, int or float; not {type(value).__name__}')
-        self._val = value
-        super().__init__()
-
-    def data(self, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._val
-        return super().data(role)
-
-    def set_val(self, val):
-        if not isinstance(val, (str, int, float)):
-            raise TypeError(f'StandardItem only supports str, int or float; not {type(val).__name__}')
-        self._val = val
-    
-    def get_val(self):
-        return self._val
-
 class TreeModel(QStandardItemModel):
     """
     Data Model for Analysis table
@@ -295,53 +272,66 @@ class TreeModel(QStandardItemModel):
         """
         Converts and inserts the data into the model
         """
-        player_row = self.to_standard_item(['Player']+['']*16)
-        npc_row = self.to_standard_item(['NPC']+['']*16)
+        player, player_row = std_item_generator(['Player']+['']*16, ())
+        npc, npc_row = std_item_generator(['NPC']+['']*16, ())
         for stats in data.values():
-            current_entity = self.to_standard_item(filtered_ability(stats[1][0], (1,)))
+            if self.is_passive(stats):
+                continue
+            current_entity, current_row = std_item_generator(stats[1][0], (1,))
+            pet_sum_set = False
             pet_sum = None
             if isinstance(stats[1], list):
                 for ability in stats[1][1:]:
-                    if ability[0][0] == 'Pets (sum)':
-                        pet_sum = self.insert_ability(ability, current_entity[0])
+                    if pet_sum_set or ability[0][0] != 'Pets (sum)':
+                        self.insert_ability(ability, current_entity)
                     else:
-                        self.insert_ability(ability, current_entity[0])
+                        pet_sum, pet_row = std_item_generator(ability[0], (1,))
+                        current_entity.appendRow(pet_row)
+                        pet_sum_set = True
                 if stats[0]:
-                    player_row[0].appendRow(current_entity)
+                    player.appendRow(current_row)
                 else:
-                    npc_row[0].appendRow(current_entity)
+                    npc.appendRow(current_row)
             if isinstance(stats[2], list):
                 for pet_ability in stats[2]:
-                    self.insert_ability(pet_ability, pet_sum)   
+                    self.insert_ability(pet_ability, pet_sum, name_index=0)   
         self._root.appendRow(player_row)
         self._root.appendRow(npc_row)
 
-    def insert_ability(self, ability:list, parent:StandardItem):
+    def insert_ability(self, ability:list, parent:StandardItem, name_index:int=1, sub_index:int=0):
         """
         Recursively adds an ability and its sub-abilites to parent
         """
-        global_  = self.to_standard_item(filtered_ability(ability[0], (1,)))
-        if ability[0][0] == 'Pets (sum)':
-            parent.appendRow(global_)
-            return global_[0]
+        global_, global_row  = std_item_generator(ability[0], (name_index,)) #self.to_standard_item(filtered_ability(ability[0], (1,)))
         for line in ability[1:]:
-            if len(line) > 0 and isinstance(line[0], list):
-                if len(ability) == 2 and isinstance(line[1][0], list):
-                    if line[0][0].startswith('C['):
-                        global_[0].set_val(f'{global_[0].get_val()} {get_entity_num(line[0][0])}')
-                    elif line[0][0].startswith('P['):
-                        global_[0].set_val(clean_player_id(line[0][0]))
-                    for child_line in line[1:]:
-                        self.insert_ability(child_line, global_[0])
-                elif len(ability) == 2 and isinstance(line[1][0], str):
-                    global_[0].set_val(f'{line[0][0]} {get_entity_num(ability[0][0])}')
-                    for child_line in line[1:]:
-                        global_[0].appendRow(self.to_standard_item(filtered_ability(child_line, (0,))))
+            if isinstance(line[0], list): #len(line) > 0 and 
+                if len(ability) == 2:
+                    global_.set_val(ability[0][1])
+                    if isinstance(line[1][0], list):
+                        for child_line in line[1:]:
+                            self.insert_ability(child_line, global_, name_index, sub_index)
+                    else:
+                        for child_line in line[1:]:
+                            global_.appendRow(std_item_generator(child_line, (sub_index,))[1])
                 else:
-                    self.insert_ability(line, global_[0])
-            elif len(line) > 0 and isinstance(line[0], str):
-                global_[0].appendRow(self.to_standard_item(filtered_ability(line, (0,))))
-        parent.appendRow(global_)
+                # if len(ability) == 2 and isinstance(line[1][0], list):
+                #     if line[0][0].startswith('C['):
+                #         global_.set_val(f'{global_.get_val()} {get_entity_num(line[0][0])}')
+                #     elif line[0][0].startswith('P['):
+                #         global_.set_val(clean_player_id(line[0][0]))
+                #     for child_line in line[1:]:
+                #         self.insert_ability(child_line, global_)
+                # elif len(ability) == 2 and isinstance(line[1][0], str):
+                #     global_.set_val(f'{line[0][0]} {get_entity_num(ability[0][0])}')
+                #     for child_line in line[1:]:
+                #         global_.appendRow(self.to_standard_item(filtered_ability(child_line, (0,))))
+                # else:
+                #     self.insert_ability(line, global_)
+                    self.insert_ability(line, global_, name_index, sub_index)
+            elif isinstance(line[0], str): # len(line) > 0 and 
+                global_.appendRow(std_item_generator(line, (sub_index,))[1])
+                #global_.appendRow(self.to_standard_item(filtered_ability(line, (0,))))
+        parent.appendRow(global_row)
 
 
     def to_standard_item(self, it) -> tuple[StandardItem, ...]:
@@ -349,3 +339,17 @@ class TreeModel(QStandardItemModel):
         Converts each element in iterable to StandardItem and returns them as tuple 
         """
         return tuple(map(StandardItem, it))
+
+    def standard_item_generator(self, li:list, index:tuple):
+        """
+        returns a generator yielding
+        """
+
+    def is_passive(self, ar:list):
+        """
+        Determines whether entity engaged in combat
+        """
+        if len(ar[1]) < 2:
+            # Entity did not deal any damage
+            return True
+        return False

@@ -1,6 +1,7 @@
 from re import sub as re_sub
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from PyQt6.QtGui import QStandardItem
 
 from src import OSCR
 
@@ -116,3 +117,62 @@ class CustomThread(QThread):
     def run(self):
         r = self._func()
         self.result.emit((r,))
+
+class StandardItem(QStandardItem):
+    """
+    Standard Item supporting str, int and float data types
+    """
+    def __init__(self, value):
+        if not isinstance(value, (str, int, float)):
+            raise TypeError(f'StandardItem only supports str, int or float; not {type(value).__name__}')
+        self._val = value
+        super().__init__()
+
+    def data(self, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            return self._val
+        return super().data(role)
+
+    def set_val(self, val):
+        if not isinstance(val, (str, int, float)):
+            raise TypeError(f'StandardItem only supports str, int or float; not {type(val).__name__}')
+        self._val = val
+    
+    def get_val(self):
+        return self._val
+
+def std_item_generator(item_list:list, exclude_index:tuple):
+
+    def _gen(ar, index, first_item, first_index):
+        yield first_item
+        for ix, item in enumerate(ar):
+            if ix in index or ix == first_index:
+                continue
+            yield StandardItem(item)
+
+    i = 0 if not 0 in exclude_index else 1
+    if item_list[i].startswith('P['):
+        first = StandardItem(clean_player_id(item_list[i]))
+    elif item_list[i].startswith('C['):
+        first = StandardItem(clean_entity_id(item_list[i]))
+    else:
+        first = StandardItem(compensate_text(item_list[i]))
+
+    return first, _gen(item_list, exclude_index, first, i)
+
+class StdItemGenerator():
+    def __init__(self, ar:list, index:tuple):
+        self._i = 0 if not 0 in index else 1
+        if ar[self._i][0] == 'P':
+            self._first = StandardItem(clean_player_id(ar[self._i]))
+        elif ar[self._i][0] == 'C':
+            self._first = StandardItem(clean_entity_id(ar[self._i]))
+        else:
+            self._first = StandardItem(compensate_text(ar[self._i]))
+
+    def _gen(self, ar, index):
+        yield self._first
+        for ix, item in enumerate(ar):
+            if ix in index or ix == self._i:
+                continue
+            yield StandardItem(item)
