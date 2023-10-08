@@ -219,18 +219,59 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         Sets up the frame housing the detailed analysis table and graph
         """
         a_frame = self.widgets['main_tab_frames'][1]
+        dout_frame = self.create_frame(None, 'frame')
+        dtaken_frame = self.create_frame(None, 'frame')
+        hout_frame = self.create_frame(None, 'frame')
+        hin_frame = self.create_frame(None, 'frame')
+        self.widgets['analysis_tab_frames'].extend((dout_frame, dtaken_frame, hout_frame, hin_frame))
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        #graph
+        switch_frame = self.create_frame(a_frame, 'frame')
+        layout.addWidget(switch_frame, alignment=ACENTER)
+        
+        a_tabber = QTabWidget(a_frame)
+        a_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
+        a_tabber.tabBar().setStyleSheet(self.get_style_class('QTabBar', 'tabber_tab'))
+        a_tabber.addTab(dout_frame, 'DOUT')
+        a_tabber.addTab(dtaken_frame, 'DTAKEN')
+        a_tabber.addTab(hout_frame, 'HOUT')
+        a_tabber.addTab(hin_frame, 'HIN')
+        self.widgets['analysis_tabber'] = a_tabber
+        layout.addWidget(a_tabber)
 
-        tree = self.create_analysis_table(a_frame, 'tree_table')
-        layout.addWidget(tree)
-        self.widgets['analysis_table'] = tree
+        switch_style = {
+            'default': {'margin-left': '@margin', 'margin-right': '@margin'},
+            'Damage Out': {'callback': lambda: a_tabber.setCurrentIndex(0), 'align':ACENTER},
+            'Damage Taken': {'callback': lambda: a_tabber.setCurrentIndex(1), 'align':ACENTER},
+            'Heals Out': {'callback': lambda: a_tabber.setCurrentIndex(2), 'align':ACENTER},
+            'Heals In': {'callback': lambda: a_tabber.setCurrentIndex(3), 'align':ACENTER}
+        }
+        switcher, buttons = self.create_button_series(switch_frame, switch_style, 'button', ret=True)
+        switcher.setContentsMargins(0, self.theme['defaults']['margin'], 0, 0)
+        self.widgets['analysis_menu_buttons'] = buttons
+        switch_frame.setLayout(switcher)
+
+        tabs = (
+            (dout_frame, 'analysis_table_dout'), 
+            (dtaken_frame, 'analysis_table_dtaken'),
+            (hout_frame, 'analysis_table_hout'),
+            (hin_frame, 'analysis_table_hin')
+        )
+        for tab, name in tabs:
+            tab_layout = QVBoxLayout()
+            tab_layout.setContentsMargins(0, 0, 0, 0)
+            tab_layout.setSpacing(0)
+
+            #graph
+
+            tree = self.create_analysis_table(tab, 'tree_table')
+            tab_layout.addWidget(tree)
+            self.widgets[name] = tree
+            tab.setLayout(tab_layout)
         
         a_frame.setLayout(layout)
-
 
     def create_master_layout(self, parent) -> tuple[QVBoxLayout, QFrame]:
         """

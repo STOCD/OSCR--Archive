@@ -19,13 +19,21 @@ class OpenSourceCombatlogReader(OscrGui):
     # stores widgets that need to be accessed from outside their creating function
     widgets = {
         'main_menu_buttons': [],
-        'overview_menu_buttons': [],
         'main_tabber': None,
-        'overview_tabber': None,
         'main_tab_frames': [],
+
+        'overview_menu_buttons': [],
+        'overview_tabber': None,
         'overview_tab_frames': [],
         'overview_graphs': [],
-        'analysis_table': None,
+
+        'analysis_menu_buttons': [],
+        'analysis_tabber': None,
+        'analysis_tab_frames': [],
+        'analysis_table_dout': None,
+        'analysis_table_dtaken': None,
+        'analysis_table_hout': None,
+        'analysis_table_hin': None,
     }
     
     def __init__(self, version, theme, args, path, config) -> None:

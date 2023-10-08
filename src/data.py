@@ -1,6 +1,9 @@
 import os
 from multiprocessing import Pipe, Process
 from typing import Union
+import json
+from re import sub as re_sub
+import sys
 
 from PyQt6.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
@@ -30,7 +33,8 @@ DAMAGE_HEADER = ['', 'Damage', 'DPS', 'Max One Hit', 'Crits', 'Flanks', 'Attacks
         'Accuracy', 'Flank Rate', 'Kills', 'Hull Damage', 'Shield Damage', 'Resistance', 'Hull Attacks',
         'Final Resistance']
 
-HEAL_HEADER = []
+HEAL_HEADER = ['', 'Total Heal', 'HPS', 'Hull Heal', 'Shield Heal', 'Max Heal', 'Crits', 'Heal Ticks', 
+        'Crit Chance']
 
 class DataWrapper():
 
@@ -157,13 +161,41 @@ class DataWrapper():
         """
         Populates the Analysis' treeview table.
         """
-        table = self.widgets['analysis_table']
-        model = TreeModel(self.main_data, DAMAGE_HEADER, self.theme_font('tree_table_header'),
+        table = self.widgets['analysis_table_dout']
+        model = TreeModel(DAMAGE_HEADER, self.theme_font('tree_table_header'),
                 self.theme_font('tree_table'),
                 self.theme_font('', self.theme['tree_table']['::item']['font']))
+        model.populate_dout(self.main_data, 1)
         table.setModel(model)
         table.expand(model.index(0, 0))
         resize_tree_table(table)
+
+        dtaken_table = self.widgets['analysis_table_dtaken']
+        dtaken_model = TreeModel(DAMAGE_HEADER, self.theme_font('tree_table_header'),
+                self.theme_font('tree_table'),
+                self.theme_font('', self.theme['tree_table']['::item']['font']))
+        dtaken_model.populate_in(self.main_data, 3)
+        dtaken_table.setModel(dtaken_model)
+        dtaken_table.expand(dtaken_model.index(0, 0))
+        resize_tree_table(dtaken_table)
+
+        hin_table = self.widgets['analysis_table_hin']
+        hin_model = TreeModel(HEAL_HEADER, self.theme_font('tree_table_header'),
+                self.theme_font('tree_table'),
+                self.theme_font('', self.theme['tree_table']['::item']['font']))
+        hin_model.populate_in(self.main_data, 6)
+        hin_table.setModel(hin_model)
+        hin_table.expand(hin_model.index(0, 0))
+        resize_tree_table(hin_table)
+
+        hout_table = self.widgets['analysis_table_hout']
+        hout_model = TreeModel(HEAL_HEADER, self.theme_font('tree_table_header'),
+                self.theme_font('tree_table'),
+                self.theme_font('', self.theme['tree_table']['::item']['font']))
+        hout_model.populate_dout(self.main_data, 4)
+        hout_table.setModel(hout_model)
+        hout_table.expand(hout_model.index(0, 0))
+        resize_tree_table(hout_table)
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data, header, index, header_font:QFont, cell_font:QFont):
@@ -230,7 +262,7 @@ class TreeModel(QStandardItemModel):
     """
     Data Model for Analysis table
     """
-    def __init__(self, data, header, header_font, name_font, cell_font):
+    def __init__(self, header, header_font, name_font, cell_font):
         """
         Constructs a TreeModel with data accoring to the data table returned by OSCR.parser
         """
@@ -240,15 +272,17 @@ class TreeModel(QStandardItemModel):
         self._cell_font = cell_font
         super().__init__()
         self._root = self.invisibleRootItem()
-        self.populate(data)
 
     def headerData(self, section, orientation, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._header[section]
-        elif role == Qt.ItemDataRole.FontRole:
-            return self._header_font
-        elif role == Qt.ItemDataRole.TextAlignmentRole:
-            return ACENTER
+        try:
+            if role == Qt.ItemDataRole.DisplayRole:
+                return self._header[section]
+            elif role == Qt.ItemDataRole.FontRole:
+                return self._header_font
+            elif role == Qt.ItemDataRole.TextAlignmentRole:
+                return ACENTER
+        except:
+            sys.stdout.write(str((section, self._header)))
 
     def data(self, index, role):
         r = super().data(index, role)
@@ -266,22 +300,45 @@ class TreeModel(QStandardItemModel):
         elif role == Qt.ItemDataRole.TextAlignmentRole:
             if index.column() != 0:
                 return AVCENTER + ARIGHT
-       
 
-    def populate(self, data):
+    def populate_in(self, data, index):
         """
         Converts and inserts the data into the model
         """
-        player, player_row = std_item_generator(['Player']+['']*16, ())
-        npc, npc_row = std_item_generator(['NPC']+['']*16, ())
-        for stats in data.values():
-            if self.is_passive(stats):
+        player, player_row = std_item_generator(['Player']+['']*(len(self._header)-1), ())
+        npc, npc_row = std_item_generator(['NPC']+['']*(len(self._header)-1), ())
+        for player_name, stats in data.items():
+            if self._is_passive(stats):
                 continue
-            current_entity, current_row = std_item_generator(stats[1][0], (1,))
+            current_entity, current_row = std_item_generator([player_name]+['']*(len(self._header)), (1,))
+            if isinstance(stats[index], list):
+                for ability in stats[index]:
+                    _, ability_row = std_item_generator(ability[0], (1,))
+                    current_entity.appendRow(ability_row)
+                if stats[0]:
+                    player.appendRow(current_row)
+                else:
+                    npc.appendRow(current_row)
+        self._root.appendRow(player_row)
+        self._root.appendRow(npc_row)
+
+    def populate_dout(self, data, index):
+        """
+        Converts and inserts the data into the model
+        """
+        player, player_row = std_item_generator(['Player']+['']*(len(self._header)-1), ())
+        npc, npc_row = std_item_generator(['NPC']+['']*(len(self._header)-1), ())
+        for stats in data.values():
+            if self._is_passive(stats):
+                continue
+            try:
+                current_entity, current_row = std_item_generator(stats[index][0], (1,))
+            except AttributeError:
+                current_entity, current_row = std_item_generator([stats[1][0][0]]+['']*(len(self._header)), (1,))
             pet_sum_set = False
             pet_sum = None
-            if isinstance(stats[1], list):
-                for ability in stats[1][1:]:
+            if isinstance(stats[index], list):
+                for ability in stats[index][1:]:
                     if pet_sum_set or ability[0][0] != 'Pets (sum)':
                         self.insert_ability(ability, current_entity)
                     else:
@@ -292,7 +349,7 @@ class TreeModel(QStandardItemModel):
                     player.appendRow(current_row)
                 else:
                     npc.appendRow(current_row)
-            if isinstance(stats[2], list):
+            if index == 1 and isinstance(stats[2], list):
                 for pet_ability in stats[2]:
                     self.insert_ability(pet_ability, pet_sum, name_index=0)   
         self._root.appendRow(player_row)
@@ -302,11 +359,12 @@ class TreeModel(QStandardItemModel):
         """
         Recursively adds an ability and its sub-abilites to parent
         """
-        global_, global_row  = std_item_generator(ability[0], (name_index,)) #self.to_standard_item(filtered_ability(ability[0], (1,)))
+        global_, global_row  = std_item_generator(ability[0], (name_index,)) #self._to_standard_item(filtered_ability(ability[0], (1,)))
         for line in ability[1:]:
             if isinstance(line[0], list): #len(line) > 0 and 
                 if len(ability) == 2:
-                    global_.set_val(ability[0][1])
+                    #lili = line[0][1].replace(re_sub('[0-9]+(?!\))$', '', ability[0][1]).strip(), '').strip()
+                    global_.set_val(f'{line[0][1]}')
                     if isinstance(line[1][0], list):
                         for child_line in line[1:]:
                             self.insert_ability(child_line, global_, name_index, sub_index)
@@ -324,32 +382,29 @@ class TreeModel(QStandardItemModel):
                 # elif len(ability) == 2 and isinstance(line[1][0], str):
                 #     global_.set_val(f'{line[0][0]} {get_entity_num(ability[0][0])}')
                 #     for child_line in line[1:]:
-                #         global_.appendRow(self.to_standard_item(filtered_ability(child_line, (0,))))
+                #         global_.appendRow(self._to_standard_item(filtered_ability(child_line, (0,))))
                 # else:
                 #     self.insert_ability(line, global_)
                     self.insert_ability(line, global_, name_index, sub_index)
             elif isinstance(line[0], str): # len(line) > 0 and 
                 global_.appendRow(std_item_generator(line, (sub_index,))[1])
-                #global_.appendRow(self.to_standard_item(filtered_ability(line, (0,))))
+                #global_.appendRow(self._to_standard_item(filtered_ability(line, (0,))))
         parent.appendRow(global_row)
 
 
-    def to_standard_item(self, it) -> tuple[StandardItem, ...]:
+    def _to_standard_item(self, it) -> tuple[StandardItem, ...]:
         """
         Converts each element in iterable to StandardItem and returns them as tuple 
         """
         return tuple(map(StandardItem, it))
 
-    def standard_item_generator(self, li:list, index:tuple):
-        """
-        returns a generator yielding
-        """
-
-    def is_passive(self, ar:list):
+    def _is_passive(self, ar:list):
         """
         Determines whether entity engaged in combat
         """
         if len(ar[1]) < 2:
             # Entity did not deal any damage
+            return True
+        if len(ar[4]) == 0:
             return True
         return False
