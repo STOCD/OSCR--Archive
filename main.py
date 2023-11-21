@@ -222,6 +222,29 @@ class Launcher():
                 'width': 0
             }
         },
+        # used in settings
+        'toggle_button': {
+            'width': '100%',
+            'background': 'none',
+            'color': '@fg',
+            'text-decoration': 'none',
+            'border-style': 'solid',
+            'border-color': '@bc',
+            'border-width': '@bw',
+            'border-radius': 2,
+            'margin': (3, 3, 3, 3),
+            'padding': (2, 5, 0, 5),
+            'font': ('Overpass', 15, 'medium'),
+            ':hover': {
+                'background-color': '@loscr',
+            },
+            ':checked': {
+                'border-color': '@oscr',
+            },
+            ':disabled': {
+                'color': '@bc'
+            }
+        },
         # table; ::item refers to the cells, :alternate is the alternate style -> s.c: table_alternate
         'table': {
             'color': '@fg',
@@ -391,6 +414,8 @@ class Launcher():
         'parser1_lock': None,
         'default_settings': {
             'log_path': '',
+            'dmg_columns': [True]*16,
+            'heal_columns': [True]*8
         }
     }
 

@@ -1,14 +1,15 @@
 import os
 
 from PyQt6.QtWidgets import QApplication, QWidget, QLineEdit, QFrame, QListWidget, QTabWidget
-from PyQt6.QtWidgets import QVBoxLayout, QGridLayout
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QSize
 
 from src.ui.widgets import BannerLabel, WidgetBuilder, FlipButton
 from src.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
 from src.ui.plot import PlotWrapper
-from src.data import DataWrapper
+from src.data import DataWrapper, DAMAGE_HEADER, HEAL_HEADER
+from src.lib import set_variable
 
 class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
@@ -84,6 +85,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         self.setup_main_tabber(center)
         self.setup_overview_frame()
         self.setup_analysis_frame()
+        self.setup_settings_frame()
 
     def setup_left_sidebar(self, frame:QFrame):
         """
@@ -149,7 +151,7 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
         o_frame = self.create_frame(None, 'frame')
         a_frame = self.create_frame(None, 'frame')
         l_frame = self.create_frame(None, 'frame', {'background': 'pink'})
-        s_frame = self.create_frame(None, 'frame', {'background': 'brown'})
+        s_frame = self.create_frame(None, 'frame')
 
         main_tabber = QTabWidget(frame)
         main_tabber.setStyleSheet(self.get_style_class('QTabWidget', 'tabber'))
@@ -318,6 +320,70 @@ class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
         return layout, main_frame
 
+    def setup_settings_frame(self):
+        """
+        Populates the settings frame.
+        """
+        settings_frame = self.widgets['main_tab_frames'][3]
+        settings_layout = QHBoxLayout()
+        settings_layout.setContentsMargins(0, 0, 0, 0)
+        settings_layout.setSpacing(0)
+
+        col_1_frame = self.create_frame(settings_frame)
+        col_1_frame.setSizePolicy(SMINMAX)
+        settings_layout.addWidget(col_1_frame, alignment=ATOP, stretch=1)
+        col_2_frame = self.create_frame(settings_frame)
+        col_2_frame.setSizePolicy(SMINMAX)
+        settings_layout.addWidget(col_2_frame, alignment=ATOP, stretch=1)
+        col_3_frame = self.create_frame(settings_frame)
+        col_3_frame.setSizePolicy(SMINMAX)
+        settings_layout.addWidget(col_3_frame, alignment=ATOP, stretch=1)
+
+        col_1 = QVBoxLayout()
+        col_1.setSpacing(0)
+        dmg_hider_label = self.create_label('Damage table columns:', 'label', col_1_frame)
+        col_1.addWidget(dmg_hider_label)
+        dmg_hider_layout = QVBoxLayout()
+        dmg_hider_frame = self.create_frame(col_1_frame, style_override=
+                {'border-color':'@lbg', 'border-width':'@bw', 'border-style':'solid', 'border-radius': 2})
+        dmg_hider_frame.setSizePolicy(SMINMAX)
+        for i, head in enumerate(DAMAGE_HEADER[1:]):
+            bt = self.create_button(head, 'toggle_button', dmg_hider_frame)
+            bt.setCheckable(True)
+            bt.setSizePolicy(SMINMAX)
+            bt.setChecked(self.settings['dmg_columns'][i])
+            bt.clicked.connect(lambda state, i=i: set_variable(self.settings['dmg_columns'], i, state))
+            dmg_hider_layout.addWidget(bt, stretch=1)
+        dmg_hider_frame.setLayout(dmg_hider_layout)
+        col_1.addWidget(dmg_hider_frame, alignment=ATOP)
+        apply_button = self.create_button('Apply', 'button', col_1_frame, {'margin-top':15})
+        apply_button.clicked.connect(self.update_shown_columns_dmg)
+        col_1.addWidget(apply_button, alignment=ALEFT)
+        col_1_frame.setLayout(col_1)
+
+        col_2 = QVBoxLayout()
+        col_2.setSpacing(0)
+        heal_hider_label = self.create_label('Heal table columns:', 'label', col_2_frame)
+        col_2.addWidget(heal_hider_label)
+        heal_hider_layout = QVBoxLayout()
+        heal_hider_frame = self.create_frame(col_2_frame, style_override=
+                {'border-color':'@lbg', 'border-width':'@bw', 'border-style':'solid', 'border-radius': 2})
+        heal_hider_frame.setSizePolicy(SMINMAX)
+        for i, head in enumerate(HEAL_HEADER[1:]):
+            bt = self.create_button(head, 'toggle_button', heal_hider_frame)
+            bt.setCheckable(True)
+            bt.setSizePolicy(SMINMAX)
+            bt.setChecked(self.settings['heal_columns'][i])
+            bt.clicked.connect(lambda state, i=i: set_variable(self.settings['heal_columns'], i, state))
+            heal_hider_layout.addWidget(bt, stretch=1)
+        heal_hider_frame.setLayout(heal_hider_layout)
+        col_2.addWidget(heal_hider_frame, alignment=ATOP)
+        apply_button_2 = self.create_button('Apply', 'button', col_2_frame, {'margin-top':15})
+        apply_button_2.clicked.connect(self.update_shown_columns_heal)
+        col_2.addWidget(apply_button_2, alignment=ALEFT)
+        col_2_frame.setLayout(col_2)
+
+        settings_frame.setLayout(settings_layout)
 
     def get_relative_geometry(self, app:QApplication, pos=(0.1, 0.1), size=(0.8, 0.8)):
         """

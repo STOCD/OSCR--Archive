@@ -73,7 +73,6 @@ class DataWrapper():
         elif isinstance(combat_id, int) and combat_id != self.current_combat_id:
             if combat_id == -1: return
             reversed_combat = self.current_combats.count() - 1 - combat_id
-            print(reversed_combat)
             self.get_data(reversed_combat)
             self.create_overview()
             self.current_combat_id = combat_id
@@ -196,6 +195,38 @@ class DataWrapper():
         hout_table.setModel(hout_model)
         hout_table.expand(hout_model.index(0, 0))
         resize_tree_table(hout_table)
+        self.update_shown_columns_dmg()
+        self.update_shown_columns_heal()
+
+    def update_shown_columns_dmg(self):
+        """
+        Hides / shows columns of the dmg analysis table according to self.settings['dmg_columns']
+        """
+        dout_table = self.widgets['analysis_table_dout']
+        dtaken_table = self.widgets['analysis_table_dtaken']
+        for i, state in enumerate(self.settings['dmg_columns']):
+            if state:
+                dout_table.showColumn(i+1)
+                dtaken_table.showColumn(i+1)
+            else:
+                dout_table.hideColumn(i+1)
+                dtaken_table.hideColumn(i+1)
+        self.store_json(self.settings, self.config['settings_path'])
+
+    def update_shown_columns_heal(self):
+        """
+        Hides / shows columns of the heals analysis table according to self.settings['dmg_columns']
+        """
+        hout_table = self.widgets['analysis_table_hout']
+        hin_table = self.widgets['analysis_table_hin']
+        for i, state in enumerate(self.settings['heal_columns']):
+            if state:
+                hout_table.showColumn(i+1)
+                hin_table.showColumn(i+1)
+            else:
+                hout_table.hideColumn(i+1)
+                hin_table.hideColumn(i+1)
+        self.store_json(self.settings, self.config['settings_path'])
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data, header, index, header_font:QFont, cell_font:QFont):

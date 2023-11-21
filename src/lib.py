@@ -30,6 +30,12 @@ def get_entity_num(id:str) -> int:
     except TypeError:
         return -1
 
+def set_variable(var_to_be_set, index, value):
+    """
+    Assigns value at index to variable
+    """
+    var_to_be_set[index] = value
+
 def filtered_ability(list: list, index):
     """
     Generator that returns all items of list except the item in index.
