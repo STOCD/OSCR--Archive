@@ -2,7 +2,7 @@
 import os
 import re
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def get_version(package):
@@ -13,10 +13,32 @@ def get_version(package):
     return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
-version = get_version("rest_framework")
+version = get_version("OSCR")
 
 setup(
     name="OSCR",
     version=version,
     url="https://github.com/STOCD/OSCR",
+    packages=find_packages(exclude=["tests*"]),
+    include_package_data=True,
+    install_requires=[
+        "PyQt6",
+        "numpy",
+        "matplotlib",
+    ],
+    python_requires=">=3.6",
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3 :: Only",
+    ],
 )
