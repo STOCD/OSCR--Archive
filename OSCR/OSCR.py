@@ -1806,9 +1806,7 @@ class parser:
                             timeHelper[tracker] = "0" + str(timeHelp)
                         tracker += 1
                     day, month, year, hour, minute, second = timeHelper
-                    combatInformationWrapper = str(self.removeUnderscore(self.map)) + " " + str(day) + "/" + str(
-                        month) + "/" + str(year) + " " + str(hour) + ":" + str(
-                        minute) + ":" + str(second)
+                    combatInformationWrapper = f"{self.removeUnderscore(self.map)} {self.difficulty} {day}/{month}/{year} {hour}:{minute}{second}"
                     self.otherCombats[combatID] = (newFile,
                                                    combatInformationWrapper)
                     wrapperUpdated = True
