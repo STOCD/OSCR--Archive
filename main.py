@@ -1,11 +1,12 @@
 import sys
 import os
 from multiprocessing import set_start_method, freeze_support
-from src.app import OpenSourceCombatlogReader
+
+from OSCRUI import OSCRUI
 
 class Launcher():
 
-    version = '2023.9a110'
+    version = '2024.2a80'
 
     # holds the style of the app
     theme = {
@@ -221,6 +222,29 @@ class Launcher():
                 'width': 0
             }
         },
+        # used in settings
+        'toggle_button': {
+            'width': '100%',
+            'background': 'none',
+            'color': '@fg',
+            'text-decoration': 'none',
+            'border-style': 'solid',
+            'border-color': '@bc',
+            'border-width': '@bw',
+            'border-radius': 2,
+            'margin': (3, 3, 3, 3),
+            'padding': (2, 5, 0, 5),
+            'font': ('Overpass', 15, 'medium'),
+            ':hover': {
+                'background-color': '@loscr',
+            },
+            ':checked': {
+                'border-color': '@oscr',
+            },
+            ':disabled': {
+                'color': '@bc'
+            }
+        },
         # table; ::item refers to the cells, :alternate is the alternate style -> s.c: table_alternate
         'table': {
             'color': '@fg',
@@ -386,10 +410,12 @@ class Launcher():
     config = {
         'sidebar_item_width': 0,
         'plot_stylesheet_path': r'/src/ui/oscr_default.mplstyle',
-        'settings_path': r'/src/.OSCR_settings.json',
+        'settings_path': r'/.OSCR_settings.json',
         'parser1_lock': None,
         'default_settings': {
             'log_path': '',
+            'dmg_columns': [True]*16,
+            'heal_columns': [True]*8
         }
     }
 
@@ -403,8 +429,9 @@ class Launcher():
         self.args = {}
 
     def launch(self):
-        c = OpenSourceCombatlogReader(self.version, self.theme, self.args, self.base_path, self.config).run()
-        sys.exit(c)
+        exit_code = OSCRUI(self.version, self.theme, self.args, self.base_path, self.config).run()
+        sys.exit(exit_code)
+
 
 if __name__ == '__main__':
     set_start_method('spawn')
