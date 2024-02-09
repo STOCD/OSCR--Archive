@@ -9,9 +9,9 @@ from PyQt6.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 
 from OSCR import OSCR
-from OSCR.lib import clean_player_id, filtered_ability, resize_tree_table, get_entity_num, analysis_parser
-from OSCR.lib import CustomThread, StandardItem, std_item_generator
-from OSCR.ui.widgets import ARIGHT, ACENTER, AVCENTER
+from .lib import clean_player_id, filtered_ability, resize_tree_table, get_entity_num, analysis_parser
+from .lib import CustomThread, StandardItem, std_item_generator
+from .widgets import ARIGHT, ACENTER, AVCENTER
 
 TABLE_HEADER_CONVERSION = {
     'combatTime': 'Combat Time',
@@ -38,8 +38,8 @@ HEAL_HEADER = ['', 'Total Heal', 'HPS', 'Hull Heal', 'Shield Heal', 'Max Heal', 
 
 class DataWrapper():
 
-    from OSCR.ui.styles import theme_font
-    from OSCR.io import show_warning, store_json
+    from .styles import theme_font
+    from .io import show_warning, store_json
 
     def analyze_log_callback(self, combat_id=None, path=None):
         """
