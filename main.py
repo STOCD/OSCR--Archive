@@ -432,7 +432,10 @@ class Launcher():
         c = OpenSourceCombatlogReader(self.version, self.theme, self.args, self.base_path, self.config).run()
         sys.exit(c)
 
-if __name__ == '__main__':
+def main():
     set_start_method('spawn')
     freeze_support()
     Launcher().launch()
+
+if __name__ == '__main__':
+    main()

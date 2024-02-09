@@ -26,6 +26,11 @@ setup(
         "numpy",
         "matplotlib",
     ],
+    package_data={
+        "OSCR.ui": ["**/*.mplstyle"],
+    },
+    py_modules=["main"],
+    entry_points={"console_scripts": ["OSCR=main:main"]},
     python_requires=">=3.6",
     classifiers=[
         "Development Status :: 4 - Beta",
