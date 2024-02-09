@@ -5,16 +5,16 @@ from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QSize
 
-from src.ui.widgets import BannerLabel, WidgetBuilder, FlipButton
-from src.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
-from src.ui.plot import PlotWrapper
-from src.data import DataWrapper, DAMAGE_HEADER, HEAL_HEADER
-from src.lib import set_variable
+from OSCR.ui.widgets import BannerLabel, WidgetBuilder, FlipButton
+from OSCR.ui.widgets import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
+from OSCR.ui.plot import PlotWrapper
+from OSCR.data import DataWrapper, DAMAGE_HEADER, HEAL_HEADER
+from OSCR.lib import set_variable
 
 class OscrGui(WidgetBuilder, DataWrapper, PlotWrapper):
 
-    from src.ui.styles import get_style_class, create_style_sheet
-    from src.io import get_asset_path, browse_path
+    from OSCR.ui.styles import get_style_class, create_style_sheet
+    from OSCR.io import get_asset_path, browse_path
 
     def __init__(self, path) -> None:
         """

@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QPixmap, QPainter, QIcon
 from PyQt6.QtCore import QRect, Qt, QSize
 
-from src.lib import resize_tree_table
+from OSCR.lib import resize_tree_table
 
 FUNC = (FunctionType, BuiltinFunctionType, MethodType)
 
@@ -27,7 +27,7 @@ SMPIXEL = QAbstractItemView.ScrollMode.ScrollPerPixel
 
 class WidgetBuilder():
 
-    from src.ui.styles import get_style_class, get_style, merge_style, theme_font
+    from OSCR.ui.styles import get_style_class, get_style, merge_style, theme_font
 
     def __init__(self) -> None:
         """

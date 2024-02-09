@@ -2,7 +2,7 @@ import sys
 import os
 from multiprocessing import set_start_method, freeze_support
 
-from src.app import OpenSourceCombatlogReader
+from OSCR.app import OpenSourceCombatlogReader
 
 class Launcher():
 
