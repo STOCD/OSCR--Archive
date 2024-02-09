@@ -410,7 +410,7 @@ class Launcher():
     config = {
         'sidebar_item_width': 0,
         'plot_stylesheet_path': r'/OSCR/ui/oscr_default.mplstyle',
-        'settings_path': r'/src/.OSCR_settings.json',
+        'settings_path': r'/OSCR/ui/.OSCR_settings.json',
         'parser1_lock': None,
         'default_settings': {
             'log_path': '',

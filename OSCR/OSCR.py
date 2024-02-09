@@ -11,7 +11,6 @@ class players:  # main container class, used for saving stats on all entities
         self.isPlayer = isPlayer
         self.combatOver = False
         self.name = name
-        self.parse_name = self.parseName(name)
         self.dmgoutindex = {"name": 0, "target": 1, "damage": 2, "DPS": 3, "maxHit": 4, "crits": 5, "flanks": 6,
                             "attacks": 7, "misses": 8, "CrtH": 9, "acc": 10, "flankrate": 11, "kills": 12,
                             "hulldamage": 13, "shielddamage": 14, "resist": 15, "hullAttacks": 16, "finalResist": 17}
@@ -76,14 +75,6 @@ class players:  # main container class, used for saving stats on all entities
         self.globalRunTime = None
         self.timeKilled = None
         self.killedByLast = None
-
-    def parseName(self, name):
-        """ Parse the Players' name returning the name's match """
-        if self.isPlayer:
-            res = re.search(r'P\[.*@.* ((.*)@(.*))]', name)
-        else:
-            res = re.search(r'C\[.* (.*)]', name)
-        return res
 
     def updateStats(self, time2, midParseUpdate=True):
         self.temptotalAttacks = self.totalAttacks - self.misses
@@ -1806,7 +1797,7 @@ class parser:
                             timeHelper[tracker] = "0" + str(timeHelp)
                         tracker += 1
                     day, month, year, hour, minute, second = timeHelper
-                    combatInformationWrapper = f"{self.removeUnderscore(self.map)} {self.difficulty} {day}/{month}/{year} {hour}:{minute}{second}"
+                    combatInformationWrapper = f"{self.removeUnderscore(self.map)} {self.difficulty or 'Unknown'} {day}/{month}/{year} {hour}:{minute}{second}"
                     self.otherCombats[combatID] = (newFile,
                                                    combatInformationWrapper)
                     wrapperUpdated = True
