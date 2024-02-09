@@ -8,7 +8,7 @@ import sys
 from PyQt6.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QAbstractTableModel, Qt, QSortFilterProxyModel
 
-from OSCR import OSCR
+import OSCR
 from .lib import clean_player_id, filtered_ability, resize_tree_table, get_entity_num, analysis_parser
 from .lib import CustomThread, StandardItem, std_item_generator
 from .widgets import ARIGHT, ACENTER, AVCENTER
