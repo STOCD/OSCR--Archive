@@ -17,6 +17,7 @@ version = get_version("OSCR")
 
 setup(
     name="OSCR",
+    long_description="Open Source Conbat Reader",
     version=version,
     url="https://github.com/STOCD/OSCR",
     packages=find_packages(exclude=["tests*"]),
