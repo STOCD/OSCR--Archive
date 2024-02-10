@@ -23,7 +23,7 @@ jobs:
         path: dist/
 
   build_binary:
-    name: Build distribution
+    name: Build binary
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
