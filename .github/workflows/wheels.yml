@@ -1,10 +1,10 @@
-name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
+name: Build Python Distribution
 
 on: push
 
 jobs:
   build:
-    name: Build distribution 📦
+    name: Build distribution
     runs-on: ubuntu-latest
 
     steps:
@@ -16,7 +16,7 @@ jobs:
     - name: Install pypa/build
       run: python3 -m pip install build nuitka --user
     - name: Install requirements
-      run: python3 -m pip install -w requirements.txt
+      run: python3 -m pip install -r requirements.txt
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
     - name: Build a the standalone application
