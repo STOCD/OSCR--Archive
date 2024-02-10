@@ -14,12 +14,13 @@ jobs:
       with:
         python-version: "3.11"
     - name: Install pypa/build
-      run: >-
-        python3 -m pip install build nuitka --user
+      run: python3 -m pip install build nuitka --user
+    - name: Install requirements
+      run: python3 -m pip install -w requirements.txt
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
     - name: Build a the standalone application
-      run: python -m nuitka --standalone --enable-plugin=pyside6 main.py
+      run: python -m nuitka --standalone --enable-plugin=pyqt6 --static-libpython=yes main.py
     - name: Store the distribution artifacts
       uses: actions/upload-artifact@v3
       with:
