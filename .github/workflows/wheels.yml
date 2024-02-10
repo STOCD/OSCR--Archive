@@ -40,7 +40,7 @@ jobs:
     - name: Install requirements
       run: python3 -m pip install -r requirements.txt
     - name: Build the binary
-      run: python -m nuitka --standalone --enable-plugin=pyqt6 --static-libpython=yes --onefile --output-filename=OSCR --output-dir=oscr.dist main.py
+      run: python -m nuitka --standalone --enable-plugin=pyqt6 --onefile --output-filename=OSCR --output-dir=oscr.dist main.py
     - name: Store the nuikta artifacts
       uses: actions/upload-artifact@v3
       with:
