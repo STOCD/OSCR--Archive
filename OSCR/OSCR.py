@@ -1583,6 +1583,7 @@ class parser:
             self.hullAttacks = 0
             self.isPlayer = (True if self.ID[0] == "P" else False)
             self.targetIsPlayer = (True if self.targetID[0] == "P" else False)
+            self.map = None
 
             if self.ID not in self.playerList and self.ID not in self.NPCs:
                 if self.isPlayer:
@@ -1754,6 +1755,9 @@ class parser:
                         pass  # invalid combat
 
     def detectCombat(self, IDString):
+        if self.map:
+            return
+
         if IDString in self.mapIdentifiers:
             map = self.mapIdentifiers[IDString]
 
@@ -1776,11 +1780,12 @@ class parser:
         lastTime = None
         firstLine = True
         parsedLines = 0
+        self.map = None
         with open(self.path, "r") as file:
             start = timer.time()
             for line in file:
                 splycedLine = line.split("::")
-                if self.map == None:
+                if self.map is None:
                     IDcheck = splycedLine[1].split(",")
                     IDcheck = IDcheck[self.combatlogDict["targetID"] - 1]
                     wrapperUpdated = False
@@ -1818,7 +1823,8 @@ class parser:
                     parsedLines = 0
                     wrapperUpdated = False
                 if newCombat:
-                    combatInformationWrapper = str(self.map) + " " + str(time.day) + "/" + str(time.month) + "/" + str(
+                    self.map = None
+                    combatInformationWrapper = str(self.map or "Unknown") + " " + str(time.day) + "/" + str(time.month) + "/" + str(
                         time.year) + " " + str(time.hour) + ":" + str(time.minute) + ":" + str(time.second)
 
                     newFile = tempfile.NamedTemporaryFile(mode="w+", delete=True)
