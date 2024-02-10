@@ -45,7 +45,8 @@ jobs:
       uses: Nuitka/Nuitka-Action@main
       with:
         nuitka-version: main
-        script-name: OSCR
+        script-name: main.py
+        output-file: OSCR
         onefile: true
 
     - name: Upload Artifacts
