@@ -3,7 +3,6 @@ import tempfile
 from decimal import Decimal
 import time as timer
 import argparse
-import re
 
 
 class players:  # main container class, used for saving stats on all entities
@@ -2058,7 +2057,7 @@ class parser:
     def generalStatsCopy(self):
         playerArray = []
         returnString = "OSCR - "
-        print(self.map)
+        # print(self.map)
         if not self.map:
             map = "UNKWN"
         else:
