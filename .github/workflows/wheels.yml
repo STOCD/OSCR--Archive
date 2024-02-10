@@ -35,14 +35,16 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: "3.11"
-    - name: Install pypa/build
-      run: python3 -m pip install nuitka --user
     - name: Install requirements
       run: python3 -m pip install -r requirements.txt
-    - name: Build the binary
-      run: python -m nuitka --standalone --enable-plugin=pyqt6 --onefile --output-filename=OSCR --output-dir=oscr.dist main.py -y
+    - name: Build executables or extension modules from Python projects
+      uses: Nuitka/Nuitka-Action@v1.1
+      with:
+        script-name: main.py
+        name: exe
+        path: build/
     - name: Store the nuikta artifacts
       uses: actions/upload-artifact@v3
       with:
         name: oscr-${{ matrix.os }}-${{ strategy.job-index }}
-        path: oscr.dist/
+        path: build/
