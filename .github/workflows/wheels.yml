@@ -48,6 +48,9 @@ jobs:
         script-name: main.py
         output-file: OSCR
         onefile: true
+        standalone: true
+        assume-yes-for-downloads: true
+        enable-plugins: pyqt6
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
