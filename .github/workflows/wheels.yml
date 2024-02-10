@@ -100,7 +100,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/STO-OSCR-Test 
+      url: https://test.pypi.org/p/STO-OSCR
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
