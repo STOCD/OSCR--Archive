@@ -197,10 +197,11 @@ class OSCR():
         :return: tuple containing the overview table, DPS graph data and DMG graph data
         '''
         try:
-            analyze_shallow(self.combats[combat_num], self._settings)
+            combat = self.combats[combat_num]
+            if combat.table is None or combat.graph_data is None:
+                analyze_shallow(self.combats[combat_num], self._settings)
             self.combats_pointer = combat_num
-            return (self.combats[combat_num].table,
-                    self.combats[combat_num].graph_data)
+            return (combat.table, combat.graph_data)
         except IndexError:
             raise AttributeError(f'Combat #{combat_num} you are trying to analyze has not been isolated yet.'
                                  f'Number of isolated combats: {len(self.combats)} -- '

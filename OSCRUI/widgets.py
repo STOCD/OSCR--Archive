@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QPushButton
 from PyQt6.QtGui import QIcon, QPixmap, QPainter
 from PyQt6.QtCore import QRect, pyqtSlot
+from pyqtgraph import AxisItem
 
 from .widgetbuilder import SMINMIN
 
@@ -92,3 +93,33 @@ class BannerLabel(QWidget):
             painter.drawPixmap(rect, self.p)
             self.setMaximumHeight(h)
             self.setMinimumHeight(h)
+
+class CustomPlotAxis(AxisItem):
+    """
+    Extending AxisItem for custom tick formatting
+    """
+    def __init__(self, *args, unit: str = '', **kwargs):
+        super().__init__(*args, **kwargs)
+        self._unit = ' ' + unit
+
+    @property
+    def unit(self):
+        return self._unit
+    
+    @unit.setter
+    def unit(self, value):
+        self._unit = ' ' + value
+
+    def tickStrings(self, values, scale, spacing):
+        if self.logMode:
+            return self.logTickStrings(values, scale, spacing)
+        
+        strings = list()
+        for tick in values:
+            if tick >= 1000000:
+                strings.append(f'{tick / 1000000:.2f} M{self._unit}')
+            elif tick >= 1000:
+                strings.append(f'{tick / 1000:.0f} k{self._unit}')
+            else:
+                strings.append(f'{tick:.0f}{self._unit}')
+        return strings

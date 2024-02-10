@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt, QSize
 from .style import get_style_class, get_style, merge_style, theme_font
 from .iofunctions import load_icon
 
-FUNC = (FunctionType, BuiltinFunctionType, MethodType)
+CALLABLE = (FunctionType, BuiltinFunctionType, MethodType)
 
 SMINMIN = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 SMAXMAX = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
@@ -141,7 +141,7 @@ def create_button_series(self, parent, buttons:dict, style, shape:str='row', sep
         else:
             button_style = defaults
         bt = self.create_button(name, style, parent, button_style)
-        if 'callback' in detail and isinstance(detail['callback'], FUNC):
+        if 'callback' in detail and isinstance(detail['callback'], CALLABLE):
             bt.clicked.connect(detail['callback'])
         stretch = detail['stretch'] if 'stretch' in detail else 0
         if 'align' in detail:

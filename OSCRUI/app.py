@@ -1,4 +1,5 @@
 import copy
+from signal import signal, SIGINT, SIG_DFL
 import json
 from multiprocessing import Lock
 import os
@@ -11,6 +12,8 @@ from .iofunctions import load_icon_series, get_asset_path, store_json, fetch_jso
 from .textedit import format_path
 from .widgets import BannerLabel, FlipButton
 from .widgetbuilder import SMAXMAX, SMAXMIN, SMINMAX, SMINMIN, ALEFT, ARIGHT, ATOP, ACENTER
+
+signal(SIGINT, SIG_DFL)
 
 class OSCRUI():
 

@@ -1,10 +1,54 @@
 
-
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QTableView
+from pyqtgraph import PlotWidget, BarGraphItem, setConfigOptions, mkBrush, mkPen
+import numpy as np
+from typing import Callable
 
 from .datamodels import TableModel, SortingProxy
-from .widgetbuilder import SMPIXEL, RFIXED, SMINMIN
-from .style import get_style_class
+from .widgetbuilder import SMPIXEL, RFIXED, SMINMIN, create_frame
+from .widgets import CustomPlotAxis
+from .style import get_style_class, get_style, theme_font
+
+setConfigOptions(antialias=True)
+
+def setup_plot(plot_function: Callable) -> Callable:
+    '''
+    sets up Plot item and puts it into layout
+    '''
+    def plot_wrapper(self, data, time_reference=None):
+        plot_widget = PlotWidget()
+        plot_widget.setAxisItems({'left': CustomPlotAxis('left')})
+        plot_widget.setAxisItems({'bottom': CustomPlotAxis('bottom')})
+        plot_widget.setStyleSheet(get_style(self, 'plot_widget_nullifier'))
+        plot_widget.setBackground(None)
+        plot_widget.setMouseEnabled(False, False)
+        plot_widget.setMenuEnabled(False)
+        plot_widget.hideButtons()
+        plot_widget.setDefaultPadding(padding=0)
+        left_axis = plot_widget.getAxis('left')
+        left_axis.setTickFont(theme_font(self, 'plot_widget'))
+        left_axis.setTextPen(color=self.theme['defaults']['fg'])
+        bottom_axis = plot_widget.getAxis('bottom')
+        bottom_axis.setTickFont(theme_font(self, 'plot_widget'))
+        bottom_axis.setTextPen(color=self.theme['defaults']['fg'])
+
+        if time_reference is None:
+            plot_function(self, data, plot_widget)
+        else:
+            plot_function(self, data, time_reference, plot_widget)
+
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(plot_widget)
+        frame = create_frame(self, None, 'plot_widget')
+        frame.setSizePolicy(SMINMIN)
+        frame.setLayout(inner_layout)
+        outer_layout = QVBoxLayout()
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addWidget(frame, stretch=11) # if stretch ever needs to be variable, create argument for decorator
+        return outer_layout
+    return plot_wrapper
 
 def create_overview(self):
     """
@@ -15,28 +59,94 @@ def create_overview(self):
         if frame.layout():
             QWidget().setLayout(frame.layout())
 
-    # close graphs
-    """for figure in self.widgets['overview_graphs']:
-        plt.close(figure)
-    self.widgets['overview_graphs'] = []"""
+    time_data, DPS_graph_data, DMG_graph_data = self.parser1.active_combat.graph_data
+    current_table = self.parser1.active_combat.table
 
-    # DPS Bar Graph
-    #l = self.create_overview_bars()
-    # DPS Graph
-    #self.create_overview_dps()
-    # DMG Bars
-    """self.widgets['overview_menu_buttons'][2].setDisabled(True)
-    dmg_thread = CustomThread(self.window, self.create_overview_dmg)
-    dmg_thread.result.connect(self.slot_overview_dmg)
-    dmg_thread.start()"""
+    line_layout = create_line_graph(self, DPS_graph_data, time_data)
+    self.widgets['overview_tab_frames'][1].setLayout(line_layout)
 
-    layout = QVBoxLayout()
-    layout.setContentsMargins(0, 0, 0, 0)
-    self.widgets['overview_tab_frames'][0].setLayout(layout)
-    
-    # Overview Table
+    group_bar_layout = create_grouped_bar_plot(self, DMG_graph_data, time_data)
+    self.widgets['overview_tab_frames'][2].setLayout(group_bar_layout)
+
+    bar_layout = create_horizontal_bar_graph(self, current_table)
+    self.widgets['overview_tab_frames'][0].setLayout(bar_layout)
+
     tbl = create_overview_table(self)
-    layout.addWidget(tbl, stretch=4)
+    bar_layout.addWidget(tbl, stretch=4)
+
+@setup_plot
+def create_grouped_bar_plot(self, data: dict[str, tuple], time_reference: dict[str, tuple], 
+            bar_widget: PlotWidget) -> QVBoxLayout:
+    """
+    Creates a bar plot with grouped bars.
+
+    Parameters:
+    - :param data: dictionary containing the data to be plotted
+    - :param time_reference: contains the time values for the data points
+    - :param bar_widget: bar widget that will be plotted to (supplied by decorator)
+
+    :return: layout containing the graph
+    """
+    bottom_axis = bar_widget.getAxis('bottom')
+    bottom_axis.unit = 's'
+
+    group_width = 0.18
+    player_num = len(data)
+    bar_width = group_width / player_num
+    relative_bar_positions = np.linspace(0+bar_width/2, group_width-bar_width/2, player_num)
+    bar_position_offsets = relative_bar_positions - np.median(relative_bar_positions)
+
+    zipper = zip(data.items(), self.theme['plot']['color_cycler'], bar_position_offsets)
+    for (player, graph_data), color, offset in zipper:
+        if player in time_reference:
+            time_data = np.subtract(time_reference[player], offset)
+            bars = BarGraphItem(x=time_data, width=bar_width, height=graph_data, brush=color, pen=None, 
+                    name=player)
+            bar_widget.addItem(bars)
+
+@setup_plot
+def create_horizontal_bar_graph(self, table: list[list], bar_widget: PlotWidget) -> QVBoxLayout:
+    """
+    Creates bar plot from table and returns layout in which the graph was inserted.
+
+    Parameters:
+    - :param table: overview table as generated by the parser
+    - :param bar_widget: bar widget that will be plotted to (supplied by decorator)
+
+    :return: layout containing the graph
+    """
+    left_axis = bar_widget.getAxis('left')
+    left_axis.setTickFont(theme_font(self, 'app'))
+    bar_widget.setDefaultPadding(padding=0.01)
+
+    y_annotations = (tuple((index+1, line[0]+line[1]) for index, line in enumerate(table)),)
+    bar_widget.getAxis('left').setTicks(y_annotations)
+    x = tuple(line[3] for line in table)
+    y = tuple(range(1, len(x) + 1))
+    bar_widget.setXRange(0, max(x) * 1.05, padding=0)
+    bars = BarGraphItem(x0=0, y=y, height=0.75, width=x, brush=self.theme['defaults']['mfg'], pen=None)
+    bar_widget.addItem(bars)
+
+@setup_plot
+def create_line_graph(self, data: dict[str, tuple], time_reference: dict[str, tuple], 
+            graph_widget: PlotWidget) -> QVBoxLayout:
+    """
+    Creates line plot from data and returns layout that countins the plot. 
+
+    Parameters:
+    - :param data: dictionary containing the data to be plotted
+    - :param time_reference: contains the time values for the data points
+    - :param graph_widget: graph widget that will be plotted to (supplied by decorator)
+
+    :return: layout containing the graph
+    """
+    bottom_axis = graph_widget.getAxis('bottom')
+    bottom_axis.unit = 's'
+
+    for (player, graph_data), color in zip(data.items(), self.theme['plot']['color_cycler']):
+        if player in time_reference:
+            time_data = time_reference[player]
+            graph_widget.plot(time_data, graph_data, pen=mkPen(color, width=1.5), name=player)
 
 def create_overview_table(self) -> QTableView:
     """

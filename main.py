@@ -398,6 +398,25 @@ class Launcher():
                 'border-color': '@oscr',
             },
         },
+        # frame of the plot widgets
+        'plot_widget': {
+            'border-style': 'solid',
+            'border-width': '@bw',
+            'border-color': '@bc',
+            'margin': (10, 10, 10, 0),
+            'padding': 10,
+            'font': ('Overpass', 10, 'bold')
+        },
+        # undoes all styling of plot_widget to stop inheritance
+        'plot_widget_nullifier': {
+            'border': 'none',
+            'margin': 0,
+            'padding': 0,
+        },
+        'plot': {
+            'color_cycler': ('#b47254', '#545db4', '#a84a51', '#8f54b4', '#7FA95F', '#B45492', '#BFBC45', 
+                             '#54A9B4', '#E47B1C', '#BCBCBC')
+        },
         # other style decisions
         's.c': {
             'sidebar_item_width': 0.15,
