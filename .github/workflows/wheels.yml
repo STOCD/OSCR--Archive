@@ -24,27 +24,35 @@ jobs:
 
   build_binary:
     name: Build binary ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-11]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
+
     - uses: actions/checkout@v4
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: "3.11"
+
     - name: Install requirements
       run: python3 -m pip install -r requirements.txt
-    - name: Build executables or extension modules from Python projects
-      uses: Nuitka/Nuitka-Action@v1.1
+
+    - name: Build Executable
+      uses: Nuitka/Nuitka-Action@main
       with:
-        script-name: main.py
-        name: exe
-        path: build/
-    - name: Store the nuikta artifacts
+        nuitka-version: main
+        script-name: OSCR
+        onefile: true
+
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: oscr-${{ matrix.os }}-${{ strategy.job-index }}
-        path: build/
+        name: ${{ runner.os }} Build
+        path: |
+          build/*.exe
+          build/*.bin
+          build/*.app/**/*
