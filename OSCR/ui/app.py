@@ -3,12 +3,12 @@ import os
 import json
 import copy
 
-from src.ui.core import OscrGui
+from .core import OscrGui
 
 
 class OpenSourceCombatlogReader(OscrGui):
 
-    from src.io import load_icon, format_path, fetch_json, store_json
+    from .io import load_icon, format_path, fetch_json, store_json
 
     app_dir = None
 

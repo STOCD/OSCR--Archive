@@ -3,7 +3,7 @@ from re import sub as re_sub
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from PyQt6.QtGui import QStandardItem
 
-from src import OSCR
+import OSCR
 
 def clean_player_id(id:str) -> str:
     """

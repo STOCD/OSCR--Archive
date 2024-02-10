@@ -2,7 +2,7 @@ import sys
 import os
 from multiprocessing import set_start_method, freeze_support
 
-from src.app import OpenSourceCombatlogReader
+from OSCR.ui.app import OpenSourceCombatlogReader
 
 class Launcher():
 
@@ -409,8 +409,8 @@ class Launcher():
 
     config = {
         'sidebar_item_width': 0,
-        'plot_stylesheet_path': r'/src/ui/oscr_default.mplstyle',
-        'settings_path': r'/src/.OSCR_settings.json',
+        'plot_stylesheet_path': r'/OSCR/ui/oscr_default.mplstyle',
+        'settings_path': r'/OSCR/ui/.OSCR_settings.json',
         'parser1_lock': None,
         'default_settings': {
             'log_path': '',
@@ -432,7 +432,10 @@ class Launcher():
         c = OpenSourceCombatlogReader(self.version, self.theme, self.args, self.base_path, self.config).run()
         sys.exit(c)
 
-if __name__ == '__main__':
+def main():
     set_start_method('spawn')
     freeze_support()
     Launcher().launch()
+
+if __name__ == '__main__':
+    main()

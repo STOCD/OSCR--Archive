@@ -1,0 +1,62 @@
+name: Build Python Distribution
+
+on: push
+
+jobs:
+  build_wheels:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    - name: Install pypa/build
+      run: python3 -m pip install build --user
+    - name: Build binary wheel and source tarball
+      run: python3 -m build
+    - name: Store the distribution artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: oscr-wheel
+        path: dist/
+
+  build_binary:
+    name: Build binary ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install requirements
+      run: python3 -m pip install -r requirements.txt
+
+    - name: Build Executable
+      uses: Nuitka/Nuitka-Action@main
+      with:
+        nuitka-version: main
+        script-name: main.py
+        output-file: OSCR
+        onefile: true
+        standalone: true
+        assume-yes-for-downloads: true
+        enable-plugins: pyqt6
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ runner.os }} Build
+        path: |
+          build/*.exe
+          build/*.bin
+          build/*.app/**/*

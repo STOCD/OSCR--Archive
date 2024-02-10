@@ -2,7 +2,7 @@ import datetime
 import tempfile
 from decimal import Decimal
 import time as timer
-import numpy as np
+import argparse
 
 
 class players:  # main container class, used for saving stats on all entities
@@ -74,7 +74,6 @@ class players:  # main container class, used for saving stats on all entities
         self.globalRunTime = None
         self.timeKilled = None
         self.killedByLast = None
-
 
     def updateStats(self, time2, midParseUpdate=True):
         self.temptotalAttacks = self.totalAttacks - self.misses
@@ -512,17 +511,7 @@ class parser:
         self.globalCombatTime = (self.globalCombatEnd - self.globalCombatStart).total_seconds()
 
     def timeToTimeAndDate(self, timeSplice):  # turns combatlog time string into TimeDate object
-        timeSplice = timeSplice.split(":")
-        seconds = timeSplice.pop()
-        seconds = seconds.split(".")
-        timeSplice.append(seconds[0])
-        timeSplice.append(seconds[1])
-        timeSplice[0] = int(timeSplice[0]) + 2000
-
-        time = datetime.datetime(timeSplice[0], int(timeSplice[1]), int(timeSplice[2]), int(timeSplice[3]),
-                                 int(timeSplice[4]), int(timeSplice[5]), int(timeSplice[6]) * 100000)
-
-        return time
+        return datetime.datetime.strptime(timeSplice, "%y:%m:%d:%H:%M:%S.%f")
 
     def generateHandle(self,IDSplyce):  # returns player handle, can further splice this for only @xxxx or character name.
         IDSplyce = IDSplyce.split(" ", 1)
@@ -1594,23 +1583,27 @@ class parser:
             self.hullAttacks = 0
             self.isPlayer = (True if self.ID[0] == "P" else False)
             self.targetIsPlayer = (True if self.targetID[0] == "P" else False)
+            self.map = None
 
             if self.ID not in self.playerList and self.ID not in self.NPCs:
                 if self.isPlayer:
 
                     self.playerList.append(self.ID)
                     self.createTableInstance()
-                elif not self.ID in self.NPCs:
+                elif self.ID not in self.NPCs:
                     self.NPCs.append(self.ID)
                     self.createTableInstance()
             if self.targetID not in self.NPCs and self.targetID not in self.playerList:
-                if not self.targetID == "*" and not self.targetID == None:
+                if self.targetID and self.targetID != "*":
                     if self.targetID not in self.playerList and self.targetIsPlayer:
                         self.playerList.append(self.targetID)
                         self.createTableInstanceAlternate(True)
                     elif self.targetID not in self.NPCs:
                         self.NPCs.append(self.targetID)
                         self.createTableInstanceAlternate(False)
+                    targetID = self.targetID.split(" ")
+                    targetID = targetID[1].split("]")[0]
+                    self.detectCombat(targetID)
             if self.targetID in self.playerList or self.targetID in self.NPCs:
                 self.damaged = self.tableArray[self.playerdict[self.targetID]]
             else:
@@ -1732,7 +1725,8 @@ class parser:
             table.updateTables()
         if self.difficulty == None:
             self.detectDifficulty()
-        print(len(self.tableArray), len(self.playerList), len(self.NPCs), len(self.playerdict))
+        # print(len(self.tableArray), len(self.playerList), len(self.NPCs), len(self.playerdict))
+
     def detectDifficulty(self):
         for entity in self.tableArray:
             if entity.name in self.difficultyDetectionDict:
@@ -1761,6 +1755,9 @@ class parser:
                         pass  # invalid combat
 
     def detectCombat(self, IDString):
+        if self.map:
+            return
+
         if IDString in self.mapIdentifiers:
             map = self.mapIdentifiers[IDString]
 
@@ -1783,11 +1780,12 @@ class parser:
         lastTime = None
         firstLine = True
         parsedLines = 0
+        self.map = None
         with open(self.path, "r") as file:
             start = timer.time()
             for line in file:
                 splycedLine = line.split("::")
-                if self.map == None:
+                if self.map is None:
                     IDcheck = splycedLine[1].split(",")
                     IDcheck = IDcheck[self.combatlogDict["targetID"] - 1]
                     wrapperUpdated = False
@@ -1803,12 +1801,11 @@ class parser:
                             timeHelper[tracker] = "0" + str(timeHelp)
                         tracker += 1
                     day, month, year, hour, minute, second = timeHelper
-                    combatInformationWrapper = str(self.removeUnderscore(self.map)) + " " + str(day) + "/" + str(
-                        month) + "/" + str(year) + " " + str(hour) + ":" + str(
-                        minute) + ":" + str(second)
-                    self.otherCombats.update({combatID: (newFile, combatInformationWrapper)})
+                    combatInformationWrapper = f"{self.removeUnderscore(self.map)} {self.difficulty or 'Unknown'} {day}/{month}/{year} {hour}:{minute}{second}"
+                    self.otherCombats[combatID] = (newFile,
+                                                   combatInformationWrapper)
                     wrapperUpdated = True
-                    print(combatInformationWrapper)
+                    # print(combatInformationWrapper)
                 timeCheck = splycedLine[0]
                 time = self.timeToTimeAndDate(timeCheck)
                 if firstLine:
@@ -1826,11 +1823,13 @@ class parser:
                     parsedLines = 0
                     wrapperUpdated = False
                 if newCombat:
-                    combatInformationWrapper = str(self.map) + " " + str(time.day) + "/" + str(time.month) + "/" + str(
+                    self.map = None
+                    combatInformationWrapper = str(self.map or "Unknown") + " " + str(time.day) + "/" + str(time.month) + "/" + str(
                         time.year) + " " + str(time.hour) + ":" + str(time.minute) + ":" + str(time.second)
 
                     newFile = tempfile.NamedTemporaryFile(mode="w+", delete=True)
-                    self.otherCombats.update({combatID: (newFile, combatInformationWrapper)})
+                    self.otherCombats[combatID] = (newFile,
+                                                   combatInformationWrapper)
                     newFile.write(line)
                     newCombat = False
                 else:
@@ -1845,16 +1844,18 @@ class parser:
         self.combatLogAnalysis()
         lastTime = timer.time()
         run = lastTime - start
-        print(run)
+        # print(run)
 
     def readPreviousCombat(self, combatID):
         self.softResetParser()
+        # print(self.otherCombats)
         file = self.otherCombats[combatID][0]
         file.seek(0)
         lines = file.readlines()
         for line in lines:
             self.combatlog.append(line)
         self.combatLogAnalysis()
+
 
     def readCombatFromTempfile(self, otherCombat):
         self.softResetParser()
@@ -1908,7 +1909,6 @@ class parser:
         return self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart, self.NPCDamageChart, self.NPCDPSChart
 
     def readPreviousCombatFull(self, combatID):
-        self.resetParser()
         self.depthAnalysis = True
         self.readPreviousCombat(combatID)
         self.generatedUItables()
@@ -1916,7 +1916,6 @@ class parser:
 
 
     def readPreviousCombatShallow(self, combatID):
-        self.resetParser()
         self.depthAnalysis = False
         self.readPreviousCombat(combatID)
         return self.otherCombats, self.map, self.difficulty, self.damageChart, self.DPSChart, self.NPCDamageChart, self.NPCDPSChart
@@ -1951,7 +1950,7 @@ class parser:
         startTime = None
         # lineOffset = []
         # offset = 0
-        print("realtime Parser")
+        # print("realtime Parser")
         running = True
         while running:
             if startline == None:
@@ -1966,8 +1965,8 @@ class parser:
                         if now - time < delta:
                             startline = line
                             startTime = time
-                            print("test")
-                            print(startline)
+                            # print("test")
+                            # print(startline)
                             break
             else:
                 # print("running")
@@ -2009,7 +2008,7 @@ class parser:
                                     combatTime = 1
                                 for player in playerDict:
                                     playerDict[player][1] = playerDict[player][0] / combatTime
-                                    print(player, playerDict[player][1])
+                                    # print(player, playerDict[player][1])
                             timer.sleep(0.5)
 
     def generateFrontPageTable(self):  # generates the front page table with a quick summary of combat stats
@@ -2064,7 +2063,8 @@ class parser:
     def generalStatsCopy(self):
         playerArray = []
         returnString = "OSCR - "
-        if self.map == None:
+        # print(self.map)
+        if not self.map:
             map = "UNKWN"
         else:
             map = self.queueToAbreviation[self.map]
@@ -2099,8 +2099,7 @@ class parser:
                     dps = str(dps[0]) + "," + str(dps[1])[0:1] + "M"
                 elif len(dps) > 3:
                     dps = str(dps[0]) + "," + str(dps[1])[0:1] + "B"
-                if handle == int and dmg == int and dps == int:
-                    playerArray.append([handle, dmg, dps])
+                playerArray.append([handle, dmg, dps])
                 if player.runtime > combatTime:
                     combatTime = player.runtime
         temp = datetime.timedelta(seconds=combatTime)
@@ -2115,7 +2114,7 @@ class parser:
             map = map + "[" + str(minutes) + ":" + str(seconds) + "." + str(temp.seconds)[0] + "] DMG(DPS) - "
         else:
             map = map + "[0:" + str(temp.seconds) + "." + str(temp.seconds)[0] + "] DMG(DPS) - "
-        print(playerArray)
+        # print(playerArray)
         playerArray.sort(key=lambda row: row[2], reverse=True)
         mapCopy = map
         for playerinstance in playerArray:
@@ -2166,6 +2165,8 @@ class parser:
         elif wantedStat == "MaxOneHeal":
             returnString = returnString + "Max One-Heal: " + str(player.maxOneHeal) + " (" + str(
                 player.maxOneHealWeapon) + ")"
+        elif wantedStat == "DPS":
+            returnString = returnString + "DPS: " + str(round(player.DPS, 1))
         else:
             return "keyError"
         return returnString
@@ -2230,28 +2231,28 @@ class parser:
             return "keyError"
 
 
-
-
-
-
-
 def main():
-    path = "ISE 1.5mil.log"
+    # path = "ISE 1.5mil.log"
+
+    _parser = argparse.ArgumentParser()
+    _parser.add_argument("-p", "--path", type=str)
+    args = _parser.parse_args()
+
     parserInstance = parser()
-    parserInstance.setPath(path)
+    parserInstance.setPath(args.path)
     # parserInstance.realTimeParser()
-    results = parserInstance.readCombatShallow(path)
+    parserInstance.readCombatShallow(args.path)
     table = parserInstance.createFrontPageTable()
-    print(table)
 
     for player in parserInstance.tableArray:
         if player.isPlayer:
-            graph = parserInstance.getStatsCopy("ATKS-in", player.name)
+            graph = parserInstance.getStatsCopy("DPS", player.name)
             print(graph)
-    for row in table:
-        print(row)
+    # for row in table:
+    #     print(row)
 
-
+    copy = parserInstance.generalStatsCopy()
+    print(copy)
 
 
 if __name__ == '__main__':

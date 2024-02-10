@@ -5,13 +5,13 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QTableView
 import numpy as np
 
-from src.data import TableModel, SortingProxy
-from src.ui.widgets import SMINMIN, RFIXED, SMPIXEL
-from src.lib import clean_player_id, CustomThread
+from .data import TableModel, SortingProxy
+from .widgets import SMINMIN, RFIXED, SMPIXEL
+from .lib import clean_player_id, CustomThread
 
 class PlotWrapper():
 
-    from src.ui.styles import theme_font, get_style_class
+    from .styles import theme_font, get_style_class
 
     def __init__(self) -> None:
         """
