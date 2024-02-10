@@ -15,14 +15,18 @@ jobs:
         python-version: "3.x"
     - name: Install pypa/build
       run: >-
-        python3 -m
-        pip install
-        build
-        --user
+        python3 -m pip install build nuitka --user
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
-    - name: Store the distribution packages
+    - name: Build a the standalone application
+      run: python -m nuitka --standalone --enable-plugin=pyside6 main.py
+    - name: Store the distribution artifacts
       uses: actions/upload-artifact@v3
       with:
         name: python-package-distributions
         path: dist/
+    - name: Store the nuikta artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-package-distributions
+        path: main.dist/
