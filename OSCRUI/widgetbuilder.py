@@ -66,7 +66,7 @@ def create_icon_button(self, icon, style:str='', parent=None, style_override={})
     button.setSizePolicy(SMAXMAX)
     return button
 
-def create_frame(self, parent, style='frame', style_override={}):
+def create_frame(self, parent=None, style='frame', style_override={}) -> QFrame:
     """
     Creates a frame with default styling and parent
 

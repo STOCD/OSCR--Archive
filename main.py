@@ -6,7 +6,7 @@ from OSCRUI import OSCRUI
 
 class Launcher():
 
-    version = '2024.2a80'
+    version = '2024.2a110'
 
     # holds the style of the app
     theme = {
@@ -413,9 +413,16 @@ class Launcher():
             'margin': 0,
             'padding': 0,
         },
+        # holds various properties related to graphing
         'plot': {
             'color_cycler': ('#b47254', '#545db4', '#a84a51', '#8f54b4', '#7FA95F', '#B45492', '#BFBC45', 
-                             '#54A9B4', '#E47B1C', '#BCBCBC')
+                             '#54A9B4', '#E47B1C', '#BCBCBC'),
+        },
+        'plot_legend': {
+            'font': ('Overpass', 12, 'Medium'),
+            'border-style': 'none',
+            'padding': 0,
+            'margin': 0
         },
         # other style decisions
         's.c': {
